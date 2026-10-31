@@ -1,194 +1,130 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="h-full">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PontoSnap - Controle de Comprovantes</title>
+    <title>Controle de Comprovantes de Ponto</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        /* Fundo personalizado com padrão de mini carteirinhas de trabalho vetorizadas */
+        body {
+            background-color: #1e3a8a; /* Azul forte base */
+            /* Padrão SVG repetido com mini carteirinhas de trabalho em tom sutil */
+            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'%3E%3Cpath d='M14 16h12v4H14v-4zm0 6h12v4H14v-4zm16-6h36v16H30V16zm4 4h28v8H34v-8zM14 36h12v4H14v-4zm0 6h12v4H14v-4zm16-6h36v16H30V36zm4 4h28v8H34v-8z'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: 80px 80px;
+        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-full flex flex-col antialiased">
+<body class="text-slate-800 min-h-screen flex flex-col">
 
-    <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-    <!-- Image Preview Modal -->
-    <div id="image-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl transform transition-all">
-            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                <div>
-                    <h3 id="modal-title" class="font-bold text-slate-800 text-base">Visualizar Comprovante</h3>
-                    <p id="modal-subdate" class="text-xs text-slate-500"></p>
-                </div>
-                <button onclick="closeImageModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div class="p-6 flex flex-col items-center bg-slate-900">
-                <img id="modal-img" src="" alt="Comprovante ampliado" class="max-h-[60vh] object-contain rounded-xl shadow-md">
-            </div>
-            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                <span id="modal-expiration" class="text-xs text-slate-500 font-medium"></span>
-                <button onclick="closeImageModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-semibold rounded-xl transition-colors">Fechar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Header -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div class="max-w-md mx-auto px-4 py-3.5 flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-indigo-600/30">
-                    ⏱️
-                </div>
-                <div>
-                    <h1 class="font-bold text-slate-800 text-base leading-none">PontoSnap</h1>
-                    <p class="text-[11px] text-slate-400 mt-0.5">Gestão de Comprovantes</p>
-                </div>
-            </div>
-            <div id="active-badge" class="bg-indigo-50 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full border border-indigo-100">
-                0 ativos
-            </div>
+    <!-- Cabeçalho -->
+    <header class="bg-blue-900/90 backdrop-blur-md text-white shadow-lg p-4 sticky top-0 z-10 border-b border-blue-700/50">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <h1 class="text-base font-bold flex items-center gap-2">
+                <span class="bg-blue-800 p-1.5 rounded-lg shadow-inner">⏱️</span> Meu Ponto Certo
+            </h1>
+            <span id="total-comprovantes" class="text-xs bg-blue-800 text-blue-100 px-3 py-1 rounded-full font-semibold border border-blue-600/50">0 ativos</span>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="max-w-md w-full mx-auto p-4 flex-1 flex flex-col gap-6 pb-24">
-
-        <!-- Upload Form Card -->
-        <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
-            <h2 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                Novo Registro de Ponto
+    <!-- Conteúdo Principal -->
+    <main class="max-w-md w-full mx-auto p-4 flex-grow pb-24">
+        
+        <!-- Cartão de Ação / Envio -->
+        <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-5 mb-6">
+            <h2 class="text-xs uppercase tracking-wider font-bold text-blue-900 mb-3 flex items-center gap-1.5">
+                <span>➕</span> Adicionar Novo Comprovante
             </h2>
             
-            <form id="receipt-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+            <form id="form-ponto" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Data do Ponto Impreso</label>
-                    <input type="date" id="receipt-date" required 
-                           class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 bg-slate-50 text-sm font-medium">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Data do Comprovante</label>
+                    <input type="date" id="data-ponto" required 
+                           class="w-full rounded-xl border border-slate-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">Foto do Papelzinho</label>
-                    <div class="border-2 border-dashed border-slate-300 rounded-2xl p-5 text-center hover:border-indigo-500 transition-colors bg-slate-50 cursor-pointer relative" onclick="document.getElementById('receipt-file').click()">
-                        <input type="file" id="receipt-file" accept="image/*" capture="environment" required class="hidden" onchange="handleFileSelect(event)">
-                        <div id="upload-placeholder" class="flex flex-col items-center">
-                            <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mb-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                            </div>
-                            <p class="text-xs font-semibold text-slate-700">Tirar foto ou carregar arquivo</p>
-                            <p class="text-[10px] text-slate-400 mt-0.5">Compressão automática integrada</p>
-                        </div>
-                        <div id="upload-preview-container" class="hidden flex flex-col items-center">
-                            <img id="upload-preview-img" src="" alt="Prévia" class="max-h-32 rounded-lg shadow-sm object-contain mb-2">
-                            <span class="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">Foto pronta para salvar</span>
-                        </div>
-                    </div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Foto do Papelzinho</label>
+                    <input type="file" id="foto-ponto" accept="image/*" capture="environment" required
+                           class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-800 hover:file:bg-blue-100 cursor-pointer">
+                    <p class="text-[10px] text-slate-400 mt-1">A imagem será otimizada automaticamente para economizar espaço.</p>
                 </div>
 
-                <button type="submit" id="submit-btn"
-                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]">
+                <button type="submit" id="btn-salvar"
+                        class="w-full bg-blue-800 hover:bg-blue-900 text-white font-semibold py-3 px-4 rounded-xl text-sm transition shadow-md active:scale-[0.98]">
                     Salvar Comprovante
                 </button>
             </form>
         </div>
 
-        <!-- Retention Rule Notice -->
-        <div class="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 flex items-start gap-3">
-            <span class="text-xl">💡</span>
-            <div class="text-xs text-amber-800">
-                <span class="font-bold block mb-0.5">Regra de Retenção Mensal</span>
-                Os comprovantes são mantidos automaticamente até o <strong>dia 10 do mês seguinte</strong>. Após essa data, expirados são removidos para liberar espaço.
-            </div>
-        </div>
-
-        <!-- Receipts List Section -->
+        <!-- Seção da Lista -->
         <div>
-            <div class="flex items-center justify-between mb-3">
-                <h2 class="text-sm font-bold text-slate-800">Comprovantes Vigentes</h2>
-                <button onclick="loadDemoData()" class="text-xs text-indigo-600 hover:text-indigo-700 font-semibold">Carregar Exemplo</button>
+            <div class="flex items-center justify-between mb-3 px-1">
+                <h2 class="text-xs uppercase tracking-wider font-bold text-white/90 drop-shadow-sm">
+                    Comprovantes Vigentes
+                </h2>
+                <span class="text-[11px] font-medium text-blue-200">Expiram após o dia 10</span>
             </div>
 
-            <div id="receipts-list" class="space-y-3">
-                <!-- Dynamically populated -->
+            <div id="lista-comprovantes" class="space-y-3">
+                <!-- Itens inseridos via JS -->
             </div>
 
-            <!-- Empty State -->
-            <div id="empty-state" class="hidden flex flex-col items-center justify-center p-10 bg-white rounded-3xl border border-slate-200 text-center shadow-sm">
-                <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-3 text-xl">
-                    📂
-                </div>
-                <h3 class="font-bold text-slate-800 text-sm">Nenhum comprovante ativo</h3>
-                <p class="text-slate-400 text-xs max-w-[220px] mt-1">Tire uma foto do seu comprovante de ponto acima para começar.</p>
+            <!-- Estado Vazio -->
+            <div id="vazio-state" class="hidden text-center py-12 bg-white/90 backdrop-blur-sm rounded-2xl border border-dashed border-blue-300/50 shadow-md">
+                <p class="text-3xl mb-2">📂</p>
+                <p class="text-sm text-slate-700 font-semibold">Nenhum comprovante no momento</p>
+                <p class="text-xs text-slate-400 mt-1">Envie a foto de um ponto para começar.</p>
             </div>
         </div>
-
     </main>
 
-    <!-- Footer -->
-    <footer class="py-6 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
-        <p>PontoSnap &bull; Armazenamento otimizado no navegador</p>
-    </footer>
+    <!-- Modal de Visualização -->
+    <div id="modal-imagem" class="fixed inset-0 bg-black/90 z-50 hidden flex flex-col items-center justify-center p-4">
+        <button onclick="fecharModal()" class="absolute top-4 right-4 text-white text-3xl font-light bg-white/10 w-10 h-10 rounded-full flex items-center justify-center">×</button>
+        <img id="img-modal" class="max-w-full max-h-[80vh] rounded-xl object-contain mb-4 border border-white/10" src="" alt="Comprovante ampliado">
+        <div id="modal-info" class="text-white text-xs font-medium text-center bg-blue-900/80 border border-blue-500/30 px-4 py-2 rounded-full shadow-lg"></div>
+    </div>
 
-    <!-- App Logic Script -->
+    <!-- Script da Aplicação -->
     <script>
-        const STORAGE_KEY = 'pontosnap_receipts_v2';
-        let receipts = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let compressedBase64 = null;
+        const STORAGE_KEY = 'pontos_comprovantes_v1';
 
-        // Initialize on load
-        window.addEventListener('DOMContentLoaded', () => {
-            // Set default date input to today
-            document.getElementById('receipt-date').valueAsDate = new Date();
-            cleanExpiredReceipts();
-            renderReceipts();
-        });
+        document.getElementById('data-ponto').valueAsDate = new Date();
+        let comprovantes = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
-        function saveToStorage() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(receipts));
-        }
+        function calcularExpiracao(dataStr) {
+            const data = new Date(dataStr + 'T00:00:00');
+            let ano = data.getFullYear();
+            let mes = data.getMonth() + 1;
 
-        // Expiration Rule Calculation (dia 10 do mês seguinte)
-        function calculateExpirationDate(dateString) {
-            const date = new Date(dateString + 'T00:00:00');
-            let year = date.getFullYear();
-            let month = date.getMonth() + 1; // Mês seguinte
-
-            if (month > 11) {
-                month = 0;
-                year++;
+            if (mes > 11) {
+                mes = 0;
+                ano++;
             }
-            // Expira no dia 10
-            return new Date(year, month, 10);
+            return new Date(ano, mes, 10);
         }
 
-        // Automatic Cleanup of expired receipts
-        function cleanExpiredReceipts() {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+        function filtrarValidos() {
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
 
-            const initialCount = receipts.length;
-            receipts = receipts.filter(item => {
-                const expDate = new Date(item.expiration);
-                return expDate >= today;
+            comprovantes = comprovantes.filter(item => {
+                const expiracao = new Date(item.expiracao);
+                return expiracao >= hoje;
             });
-
-            if (receipts.length < initialCount) {
-                saveToStorage();
-                showToast('Comprovantes expirados após o dia 10 foram removidos.', 'info');
-            }
+            salvarStorage();
         }
 
-        // Image Compression via Canvas
-        function compressImage(file, maxWidth = 1000, quality = 0.75) {
+        function salvarStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(comprovantes));
+        }
+
+        function comprimirImagem(file, maxWidth = 1000, quality = 0.75) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function(event) {
                     const img = new Image();
                     img.onload = function() {
                         const canvas = document.createElement('canvas');
@@ -206,205 +142,117 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
 
-                        // Export compressed JPEG base64
                         const dataUrl = canvas.toDataURL('image/jpeg', quality);
                         resolve(dataUrl);
                     };
                     img.onerror = reject;
-                    img.src = e.target.result;
+                    img.src = event.target.result;
                 };
                 reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
         }
 
-        async function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        function renderizar() {
+            filtrarValidos();
+            const listaEl = document.getElementById('lista-comprovantes');
+            const vazioEl = document.getElementById('vazio-state');
+            const totalEl = document.getElementById('total-comprovantes');
 
-            try {
-                showToast('Compactando imagem...', 'info');
-                compressedBase64 = await compressImage(file);
-                
-                document.getElementById('upload-preview-img').src = compressedBase64;
-                document.getElementById('upload-placeholder').classList.add('hidden');
-                document.getElementById('upload-preview-container').classList.remove('hidden');
-                showToast('Imagem otimizada com sucesso!', 'success');
-            } catch (err) {
-                showToast('Erro ao processar imagem.', 'error');
-                console.error(err);
-            }
-        }
+            listaEl.innerHTML = '';
+            totalEl.innerText = `${comprovantes.length} ${comprovantes.length === 1 ? 'ativo' : 'ativos'}`;
 
-        // Handle Form Submission
-        async function handleFormSubmit(e) {
-            e.preventDefault();
-            const dateVal = document.getElementById('receipt-date').value;
-            const fileInput = document.getElementById('receipt-file');
-
-            if (!dateVal) {
-                showToast('Selecione a data do ponto.', 'error');
+            if (comprovantes.length === 0) {
+                vazioEl.classList.remove('hidden');
                 return;
             }
 
-            if (!compressedBase64 && fileInput.files.length > 0) {
-                // If somehow file selected but not compressed yet
-                try {
-                    compressedBase64 = await compressImage(fileInput.files[0]);
-                } catch(err) {
-                    showToast('Erro ao carregar imagem.', 'error');
-                    return;
-                }
-            }
+            vazioEl.classList.add('hidden');
+            comprovantes.sort((a, b) => new Date(b.data) - new Date(a.data));
 
-            if (!compressedBase64) {
-                showToast('Por favor, selecione uma foto.', 'error');
-                return;
-            }
-
-            const expirationDate = calculateExpirationDate(dateVal);
-
-            const newReceipt = {
-                id: 'rcpt_' + Date.now(),
-                date: dateVal,
-                expiration: expirationDate.toISOString(),
-                image: compressedBase64
-            };
-
-            receipts.unshift(newReceipt);
-            saveToStorage();
-            renderReceipts();
-            resetForm();
-            showToast('Comprovante salvo com sucesso!', 'success');
-        }
-
-        function resetForm() {
-            document.getElementById('receipt-form').reset();
-            document.getElementById('receipt-date').valueAsDate = new Date();
-            document.getElementById('upload-placeholder').classList.remove('hidden');
-            document.getElementById('upload-preview-container').classList.add('hidden');
-            compressedBase64 = null;
-        }
-
-        // Render Receipts
-        function renderReceipts() {
-            cleanExpiredReceipts();
-            const listEl = document.getElementById('receipts-list');
-            const emptyEl = document.getElementById('empty-state');
-            const badgeEl = document.getElementById('active-badge');
-
-            listEl.innerHTML = '';
-            badgeEl.innerText = `${receipts.length} ${receipts.length === 1 ? 'ativo' : 'ativos'}`;
-
-            if (receipts.length === 0) {
-                emptyEl.classList.remove('hidden');
-                return;
-            }
-
-            emptyEl.classList.add('hidden');
-
-            receipts.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            receipts.forEach(item => {
-                const parts = item.date.split('-');
-                const displayDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-                const expObj = new Date(item.expiration);
-                const displayExp = `${String(expObj.getDate()).padStart(2, '0')}/${String(expObj.getMonth() + 1).padStart(2, '0')}/${expObj.getFullYear()}`;
+            comprovantes.forEach((item) => {
+                const dataFormatada = new Date(item.data + 'T00:00:00').toLocaleDateString('pt-BR');
+                const expFormatada = new Date(item.expiracao).toLocaleDateString('pt-BR');
 
                 const card = document.createElement('div');
-                card.className = 'bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200 flex items-center justify-between gap-3 hover:shadow-md transition-shadow';
+                card.className = 'bg-white/95 backdrop-blur-sm rounded-2xl p-3 shadow-md border border-white/20 flex items-center justify-between gap-3';
 
                 card.innerHTML = `
-                    <div class="flex items-center gap-3.5 cursor-pointer flex-1" onclick="openImageModal('${item.image}', '${displayDate}', '${displayExp}')">
-                        <img src="${item.image}" class="w-14 h-14 object-cover rounded-xl border border-slate-100 flex-shrink-0 shadow-sm" alt="Ponto">
-                        <div class="min-w-0">
-                            <p class="text-xs font-bold text-slate-800">Ponto: ${displayDate}</p>
-                            <p class="text-[11px] text-slate-400 mt-0.5 truncate">Expira em: <span class="text-slate-600 font-medium">${displayExp}</span></p>
+                    <div class="flex items-center gap-3 cursor-pointer flex-grow" onclick="abrirModal('${item.imagem}', '${dataFormatada}', '${expFormatada}')">
+                        <img src="${item.imagem}" class="w-14 h-14 object-cover rounded-xl border border-slate-200 flex-shrink-0 shadow-sm" alt="Miniatura ponto">
+                        <div>
+                            <p class="text-xs font-bold text-slate-800">Ponto: ${dataFormatada}</p>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Expira em: ${expFormatada}</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-1.5 flex-shrink-0">
-                        <button onclick="openImageModal('${item.image}', '${displayDate}', '${displayExp}')" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors" title="Visualizar">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <div class="flex items-center gap-1">
+                        <button onclick="abrirModal('${item.imagem}', '${dataFormatada}', '${expFormatada}')" class="p-2 text-slate-400 hover:text-blue-700 rounded-lg transition" title="Ver imagem">
+                            🔍
                         </button>
-                        <button onclick="deleteReceipt('${item.id}')" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="Excluir">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        <button onclick="excluirItem(${item.id})" class="p-2 text-slate-400 hover:text-red-500 rounded-lg transition" title="Excluir">
+                            🗑️
                         </button>
                     </div>
                 `;
-                listEl.appendChild(card);
+                listaEl.appendChild(card);
             });
         }
 
-        // Delete Individual Receipt
-        function deleteReceipt(id) {
+        document.getElementById('form-ponto').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const inputData = document.getElementById('data-ponto').value;
+            const inputFile = document.getElementById('foto-ponto').files[0];
+
+            if (!inputFile || !inputData) return;
+
+            const btnSalvar = document.getElementById('btn-salvar');
+            btnSalvar.innerText = 'Processando e compactando...';
+            btnSalvar.disabled = true;
+
+            try {
+                const imagemOtimizada = await comprimirImagem(inputFile);
+                const dataExpiracao = calcularExpiracao(inputData);
+
+                const novoComprovante = {
+                    id: Date.now(),
+                    data: inputData,
+                    expiracao: dataExpiracao.toISOString(),
+                    imagem: imagemOtimizada
+                };
+
+                comprovantes.push(novoComprovante);
+                salvarStorage();
+                renderizar();
+
+                document.getElementById('foto-ponto').value = '';
+            } catch (erro) {
+                alert('Erro ao processar a imagem. Tente novamente.');
+                console.error(erro);
+            } finally {
+                btnSalvar.innerText = 'Salvar Comprovante';
+                btnSalvar.disabled = false;
+            }
+        });
+
+        function excluirItem(id) {
             if (confirm('Deseja realmente excluir este comprovante?')) {
-                receipts = receipts.filter(r => r.id !== id);
-                saveToStorage();
-                renderReceipts();
-                showToast('Comprovante excluído.', 'info');
+                comprovantes = comprovantes.filter(item => item.id !== id);
+                salvarStorage();
+                renderizar();
             }
         }
 
-        // Modal Handlers
-        function openImageModal(imgUrl, dateStr, expStr) {
-            document.getElementById('modal-img').src = imgUrl;
-            document.getElementById('modal-title').innerText = `Comprovante de Ponto`;
-            document.getElementById('modal-subdate').innerText = `Data registrada: ${dateStr}`;
-            document.getElementById('modal-expiration').innerText = `Válido até: ${expStr}`;
-            document.getElementById('image-modal').classList.remove('hidden');
-            document.getElementById('image-modal').classList.add('flex');
+        function abrirModal(src, data, exp) {
+            document.getElementById('img-modal').src = src;
+            document.getElementById('modal-info').innerText = `Referência: ${data} | Válido até: ${exp}`;
+            document.getElementById('modal-imagem').classList.remove('hidden');
         }
 
-        function closeImageModal() {
-            document.getElementById('image-modal').classList.remove('flex');
-            document.getElementById('image-modal').classList.add('hidden');
+        function fecharModal() {
+            document.getElementById('modal-imagem').classList.add('hidden');
         }
 
-        // Demo Data Loader
-        function loadDemoData() {
-            const today = new Date();
-            const y = today.getFullYear();
-            const m = String(today.getMonth() + 1).padStart(2, '0');
-            
-            receipts = [
-                {
-                    id: 'demo_1',
-                    date: `${y}-${m}-05`,
-                    expiration: calculateExpirationDate(`${y}-${m}-05`).toISOString(),
-                    image: 'https://placehold.co/600x800/4f46e5/ffffff?text=Comprovante+05'
-                },
-                {
-                    id: 'demo_2',
-                    date: `${y}-${m}-12`,
-                    expiration: calculateExpirationDate(`${y}-${m}-12`).toISOString(),
-                    image: 'https://placehold.co/600x800/10b981/ffffff?text=Comprovante+12'
-                }
-            ];
-            saveToStorage();
-            renderReceipts();
-            showToast('Dados de exemplo carregados!', 'success');
-        }
-
-        // Custom Toast Notifications
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            
-            let bg = 'bg-slate-800 text-white';
-            if (type === 'success') bg = 'bg-emerald-600 text-white';
-            if (type === 'error') bg = 'bg-rose-600 text-white';
-            if (type === 'info') bg = 'bg-indigo-600 text-white';
-
-            toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-xl text-xs font-semibold flex items-center justify-between gap-3 transform transition-all duration-300 translate-y-2 opacity-0 ${bg}`;
-            toast.innerHTML = `<span>${message}</span>`;
-
-            container.appendChild(toast);
-            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
-            setTimeout(() => {
-                toast.classList.add('translate-y-2', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
+        renderizar();
     </script>
 </body>
 </html>
