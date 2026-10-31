@@ -10,7 +10,6 @@
         /* Fundo personalizado com padrão de mini carteirinhas de trabalho vetorizadas */
         body {
             background-color: #1e3a8a; /* Azul forte base */
-            /* Padrão SVG repetido com mini carteirinhas de trabalho em tom sutil */
             background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'%3E%3Cpath d='M14 16h12v4H14v-4zm0 6h12v4H14v-4zm16-6h36v16H30V16zm4 4h28v8H34v-8zM14 36h12v4H14v-4zm0 6h12v4H14v-4zm16-6h36v16H30V36zm4 4h28v8H34v-8z'/%3E%3C/g%3E%3C/svg%3E");
             background-size: 80px 80px;
         }
@@ -38,17 +37,27 @@
             </h2>
             
             <form id="form-ponto" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Data do Comprovante</label>
-                    <input type="date" id="data-ponto" required 
-                           class="w-full rounded-xl border border-slate-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Data</label>
+                        <input type="date" id="data-ponto" required 
+                               class="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Ponto</label>
+                        <select id="tipo-ponto" required
+                                class="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
+                            <option value="Entrada">🟢 Entrada</option>
+                            <option value="Saída">🔴 Saída</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Foto do Papelzinho</label>
                     <input type="file" id="foto-ponto" accept="image/*" capture="environment" required
                            class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-800 hover:file:bg-blue-100 cursor-pointer">
-                    <p class="text-[10px] text-slate-400 mt-1">A imagem será otimizada automaticamente para economizar espaço.</p>
+                    <p class="text-[10px] text-slate-400 mt-1">A imagem será otimizada automaticamente.</p>
                 </div>
 
                 <button type="submit" id="btn-salvar"
@@ -58,13 +67,21 @@
             </form>
         </div>
 
-        <!-- Seção da Lista -->
+        <!-- Seção da Lista & Filtro -->
         <div>
-            <div class="flex items-center justify-between mb-3 px-1">
+            <div class="flex items-center justify-between mb-2 px-1">
                 <h2 class="text-xs uppercase tracking-wider font-bold text-white/90 drop-shadow-sm">
                     Comprovantes Vigentes
                 </h2>
-                <span class="text-[11px] font-medium text-blue-200">Expiram após o dia 10</span>
+                <span class="text-[11px] font-medium text-blue-200">Expiram após dia 10</span>
+            </div>
+
+            <!-- Caixa de Busca / Filtro por Data -->
+            <div class="bg-white/95 backdrop-blur-sm rounded-xl p-3 mb-3 shadow-md border border-white/20 flex items-center gap-2">
+                <span class="text-slate-400 text-sm">🔍</span>
+                <input type="date" id="filtro-data" placeholder="Filtrar por data específica..." 
+                       class="w-full bg-transparent text-xs text-slate-700 focus:outline-none font-medium">
+                <button type="button" onclick="limparFiltro()" id="btn-limpar-filtro" class="hidden text-xs text-blue-700 font-semibold px-2 py-1 bg-blue-50 rounded-lg hover:bg-blue-100">Limpar</button>
             </div>
 
             <div id="lista-comprovantes" class="space-y-3">
@@ -74,8 +91,8 @@
             <!-- Estado Vazio -->
             <div id="vazio-state" class="hidden text-center py-12 bg-white/90 backdrop-blur-sm rounded-2xl border border-dashed border-blue-300/50 shadow-md">
                 <p class="text-3xl mb-2">📂</p>
-                <p class="text-sm text-slate-700 font-semibold">Nenhum comprovante no momento</p>
-                <p class="text-xs text-slate-400 mt-1">Envie a foto de um ponto para começar.</p>
+                <p class="text-sm text-slate-700 font-semibold">Nenhum comprovante encontrado</p>
+                <p class="text-xs text-slate-400 mt-1">Tente ajustar a busca ou envie um novo ponto.</p>
             </div>
         </div>
     </main>
@@ -89,7 +106,7 @@
 
     <!-- Script da Aplicação -->
     <script>
-        const STORAGE_KEY = 'pontos_comprovantes_v1';
+        const STORAGE_KEY = 'pontos_comprovantes_v2';
 
         document.getElementById('data-ponto').valueAsDate = new Date();
         let comprovantes = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -158,35 +175,53 @@
             const listaEl = document.getElementById('lista-comprovantes');
             const vazioEl = document.getElementById('vazio-state');
             const totalEl = document.getElementById('total-comprovantes');
+            const filtroData = document.getElementById('filtro-data').value;
+            const btnLimpar = document.getElementById('btn-limpar-filtro');
+
+            if (filtroData) {
+                btnLimpar.classList.remove('hidden');
+            } else {
+                btnLimpar.classList.add('hidden');
+            }
+
+            // Filtragem por data selecionada na caixa de busca
+            let listaFiltrada = comprovantes;
+            if (filtroData) {
+                listaFiltrada = comprovantes.filter(item => item.data === filtroData);
+            }
 
             listaEl.innerHTML = '';
             totalEl.innerText = `${comprovantes.length} ${comprovantes.length === 1 ? 'ativo' : 'ativos'}`;
 
-            if (comprovantes.length === 0) {
+            if (listaFiltrada.length === 0) {
                 vazioEl.classList.remove('hidden');
                 return;
             }
 
             vazioEl.classList.add('hidden');
-            comprovantes.sort((a, b) => new Date(b.data) - new Date(a.data));
+            listaFiltrada.sort((a, b) => new Date(b.data) - new Date(a.data));
 
-            comprovantes.forEach((item) => {
+            listaFiltrada.forEach((item) => {
                 const dataFormatada = new Date(item.data + 'T00:00:00').toLocaleDateString('pt-BR');
                 const expFormatada = new Date(item.expiracao).toLocaleDateString('pt-BR');
+                const tipoBadgeColor = item.tipo === 'Entrada' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-rose-100 text-rose-800 border-rose-200';
 
                 const card = document.createElement('div');
                 card.className = 'bg-white/95 backdrop-blur-sm rounded-2xl p-3 shadow-md border border-white/20 flex items-center justify-between gap-3';
 
                 card.innerHTML = `
-                    <div class="flex items-center gap-3 cursor-pointer flex-grow" onclick="abrirModal('${item.imagem}', '${dataFormatada}', '${expFormatada}')">
+                    <div class="flex items-center gap-3 cursor-pointer flex-grow" onclick="abrirModal('${item.imagem}', '${dataFormatada} (${item.tipo})', '${expFormatada}')">
                         <img src="${item.imagem}" class="w-14 h-14 object-cover rounded-xl border border-slate-200 flex-shrink-0 shadow-sm" alt="Miniatura ponto">
                         <div>
-                            <p class="text-xs font-bold text-slate-800">Ponto: ${dataFormatada}</p>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Expira em: ${expFormatada}</p>
+                            <div class="flex items-center gap-2 mb-0.5">
+                                <span class="text-xs font-bold text-slate-800">${dataFormatada}</span>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${tipoBadgeColor}">${item.tipo}</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500">Expira em: ${expFormatada}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-1">
-                        <button onclick="abrirModal('${item.imagem}', '${dataFormatada}', '${expFormatada}')" class="p-2 text-slate-400 hover:text-blue-700 rounded-lg transition" title="Ver imagem">
+                        <button onclick="abrirModal('${item.imagem}', '${dataFormatada} (${item.tipo})', '${expFormatada}')" class="p-2 text-slate-400 hover:text-blue-700 rounded-lg transition" title="Ver imagem">
                             🔍
                         </button>
                         <button onclick="excluirItem(${item.id})" class="p-2 text-slate-400 hover:text-red-500 rounded-lg transition" title="Excluir">
@@ -198,9 +233,17 @@
             });
         }
 
+        document.getElementById('filtro-data').addEventListener('input', renderizar);
+
+        function limparFiltro() {
+            document.getElementById('filtro-data').value = '';
+            renderizar();
+        }
+
         document.getElementById('form-ponto').addEventListener('submit', async function(e) {
             e.preventDefault();
             const inputData = document.getElementById('data-ponto').value;
+            const inputTipo = document.getElementById('tipo-ponto').value;
             const inputFile = document.getElementById('foto-ponto').files[0];
 
             if (!inputFile || !inputData) return;
@@ -216,6 +259,7 @@
                 const novoComprovante = {
                     id: Date.now(),
                     data: inputData,
+                    tipo: inputTipo,
                     expiracao: dataExpiracao.toISOString(),
                     imagem: imagemOtimizada
                 };
@@ -242,9 +286,9 @@
             }
         }
 
-        function abrirModal(src, data, exp) {
+        function abrirModal(src, info, exp) {
             document.getElementById('img-modal').src = src;
-            document.getElementById('modal-info').innerText = `Referência: ${data} | Válido até: ${exp}`;
+            document.getElementById('modal-info').innerText = `${info} | Válido até: ${exp}`;
             document.getElementById('modal-imagem').classList.remove('hidden');
         }
 
