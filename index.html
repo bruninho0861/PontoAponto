@@ -9,17 +9,6 @@
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Cropper.js (Ferramenta de corte de imagem) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.1<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Ponto Certo - Controle de Comprovantes</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Cropper.js (Ferramenta de corte de imagem) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
@@ -90,7 +79,7 @@
         <main class="max-w-md w-full mx-auto p-4 flex-grow pb-24">
             
             <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-5 mb-6">
-                <!-- TÍTULO COM CAIXA AZUL FORTE IDÊNTICA AO BOTÃO -->
+                <!-- TÍTULO ESTILIZADO -->
                 <div class="bg-blue-800 text-white font-bold py-3 px-4 rounded-xl text-sm shadow-md mb-4 flex items-center gap-2">
                     <span>➕</span> Adicionar Novo Comprovante
                 </div>
@@ -118,17 +107,28 @@
                         </select>
                     </div>
 
+                    <!-- BOTÕES SEPARADOS PARA CÂMERA E GALERIA -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Foto do Papelzinho</label>
-                        <input type="file" id="foto-ponto" accept="image/*" capture="environment" required
-                               class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-800 hover:file:bg-blue-100 cursor-pointer">
-                        <p class="text-[10px] text-slate-400 mt-1">Insira a foto. Poderá recortar e ajustar o comprovante a seguir.</p>
-                    </div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-2">Foto do Papelzinho</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <!-- Botão para abrir a câmera diretamente -->
+                            <button type="button" onclick="document.getElementById('input-camera').click()"
+                                    class="bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 px-3 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-sm">
+                                <span>📸</span> Tirar Foto
+                            </button>
+                            <!-- Botão para escolher arquivo da galeria -->
+                            <button type="button" onclick="document.getElementById('input-galeria').click()"
+                                    class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-3 px-3 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-sm">
+                                <span>📂</span> Da Galeria
+                            </button>
+                        </div>
 
-                    <button type="submit" id="btn-salvar"
-                            class="w-full bg-blue-800 hover:bg-blue-900 text-white font-semibold py-3 px-4 rounded-xl text-sm transition shadow-md active:scale-[0.98]">
-                        Salvar Comprovante
-                    </button>
+                        <!-- Inputs ocultos que acionam a câmera ou galeria -->
+                        <input type="file" id="input-camera" accept="image/*" capture="environment" class="hidden">
+                        <input type="file" id="input-galeria" accept="image/*" class="hidden">
+
+                        <p id="nome-arquivo-selecionado" class="text-[11px] text-emerald-600 font-semibold mt-2 hidden">Imagem selecionada com sucesso!</p>
+                    </div>
                 </form>
             </div>
 
@@ -175,7 +175,7 @@
                 Cancelar
             </button>
             <button type="button" onclick="confirmarCorte()" class="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-sm transition">
-                Confirmar Corte
+                Salvar na Nuvem
             </button>
         </div>
     </div>
@@ -197,7 +197,7 @@
         let currentUser = null;
         let comprovantes = [];
         let cropper = null;
-        let arquivoOriginal = null;
+        let blobFinalCortado = null;
 
         const agora = new Date();
         document.getElementById('data-ponto').valueAsDate = agora;
@@ -325,11 +325,11 @@
             return new Date(ano, mes, 10);
         }
 
-        document.getElementById('foto-ponto').addEventListener('change', function(e) {
+        // GERENCIA A CAPTURA DE IMAGEM SEJA PELA CÂMERA OU GALERIA
+        function prepararArquivoParaCorte(e) {
             const file = e.target.files[0];
             if (!file) return;
 
-            arquivoOriginal = file;
             const reader = new FileReader();
             reader.onload = function(event) {
                 const imgEl = document.getElementById('img-para-cortar');
@@ -342,15 +342,19 @@
                 cropper = new Cropper(imgEl, {
                     aspectRatio: NaN,
                     viewMode: 1,
-                    autoCropArea: 0.8,
+                    autoCropArea: 0.85,
                 });
             };
             reader.readAsDataURL(file);
-        });
+        }
+
+        document.getElementById('input-camera').addEventListener('change', prepararArquivoParaCorte);
+        document.getElementById('input-galeria').addEventListener('change', prepararArquivoParaCorte);
 
         function cancelarCorte() {
             document.getElementById('modal-corte').classList.add('hidden');
-            document.getElementById('foto-ponto').value = '';
+            document.getElementById('input-camera').value = '';
+            document.getElementById('input-galeria').value = '';
             if (cropper) {
                 cropper.destroy();
                 cropper = null;
@@ -372,6 +376,10 @@
                     cropper = null;
                 }
 
+                document.getElementById('input-camera').value = '';
+                document.getElementById('input-galeria').value = '';
+
+                // Envia direto para a nuvem após confirmar o corte
                 await enviarComprovanteParaNuvem(blob);
             }, 'image/jpeg', 0.8);
         }
@@ -467,25 +475,20 @@
             renderizar();
         }
 
-        document.getElementById('form-ponto').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const inputFile = document.getElementById('foto-ponto').files[0];
-            if (!inputFile) {
-                alert('Por favor, selecione uma foto do comprovante.');
-                return;
-            }
-        });
-
         async function enviarComprovanteParaNuvem(imagemBlob) {
             const inputData = document.getElementById('data-ponto').value;
             const inputHora = document.getElementById('hora-ponto').value;
             const inputTipo = document.getElementById('tipo-ponto').value;
 
-            if (!inputData || !inputHora) return;
+            if (!inputData || !inputHora) {
+                alert('Por favor, preencha a data e o horário impresso no comprovante.');
+                return;
+            }
 
-            const btnSalvar = document.getElementById('btn-salvar');
-            btnSalvar.innerText = 'Enviando para a nuvem...';
-            btnSalvar.disabled = true;
+            const avisoEl = document.getElementById('nome-arquivo-selecionado');
+            avisoEl.innerText = 'Enviando para a nuvem...';
+            avisoEl.classList.remove('hidden', 'text-emerald-600');
+            avisoEl.classList.add('text-blue-600');
 
             try {
                 const fileName = `${currentUser.id}/${Date.now()}.jpg`;
@@ -521,557 +524,16 @@
                 if (insertError) throw insertError;
 
                 await carregarComprovantesSupabase();
-                document.getElementById('foto-ponto').value = '';
-            } catch (erro) {
-                alert('Erro ao salvar comprovante na nuvem. Verifique sua conexão.');
-                console.error(erro);
-            } finally {
-                btnSalvar.innerText = 'Salvar Comprovante';
-                btnSalvar.disabled = false;
-            }
-        }
-
-        async function excluirItem(id) {
-            if (confirm('Deseja realmente excluir este comprovante?')) {
-                const { error } = await supabaseClient
-                    .from('pontos')
-                    .delete()
-                    .eq('id', id)
-                    .eq('user_id', currentUser.id);
-
-                if (error) {
-                    alert('Erro ao excluir o registro.');
-                    return;
-                }
-
-                await carregarComprovantesSupabase();
-            }
-        }
-
-        function abrirModal(src, info, exp) {
-            document.getElementById('img-modal').src = src;
-            document.getElementById('modal-info').innerText = `${info} | Válido até: ${exp}`;
-            document.getElementById('modal-imagem').classList.remove('hidden');
-        }
-
-        function fecharModal() {
-            document.getElementById('modal-imagem').classList.add('hidden');
-        }
-
-        verificarSessao();
-    </script>
-</body>
-</html>3/cropper.min.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    <style>
-        body {
-            background-color: #1e3a8a;
-            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'%3E%3Cpath d='M14 16h12v4H14v-4zm0 6h12v4H14v-4zm16-6h36v16H30V16zm4 4h28v8H34v-8zM14 36h12v4H14v-4zm0 6h12v4H14v-4zm16-6h36v16H30V36zm4 4h28v8H34v-8z'/%3E%3C/g%3E%3C/svg%3E");
-            background-size: 80px 80px;
-        }
-    </style>
-</head>
-<body class="text-slate-800 min-h-screen flex flex-col">
-
-    <!-- TELA DE AUTENTICAÇÃO -->
-    <div id="auth-container" class="max-w-md w-full mx-auto p-4 flex-grow flex items-center justify-center">
-        <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 w-full">
-            <div class="text-center mb-6">
-                <span class="text-3xl">⏱️</span>
-                <h1 class="text-lg font-bold text-blue-900 mt-1">Meu Ponto Certo</h1>
-                <p id="auth-subtitle" class="text-xs text-slate-500 mt-0.5">Entre com sua conta para acessar</p>
-            </div>
-
-            <form id="form-auth" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">E-mail</label>
-                    <input type="email" id="auth-email" required 
-                           class="w-full rounded-xl border border-slate-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Senha</label>
-                    <input type="password" id="auth-senha" required 
-                           class="w-full rounded-xl border border-slate-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium"
-                           placeholder="Mín. 8 caracteres, 1 maiúscula, 1 especial">
-                    <p id="senha-aviso" class="text-[10px] text-slate-400 mt-1 hidden">Mínimo 8 caracteres, ao menos uma letra maiúscula e um caractere especial (!@#$%...).</p>
-                </div>
-
-                <div id="auth-erro" class="hidden text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200"></div>
-                <div id="auth-sucesso" class="hidden text-xs text-emerald-600 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200"></div>
-
-                <button type="submit" id="btn-auth-submit"
-                        class="w-full bg-blue-800 hover:bg-blue-900 text-white font-semibold py-3 px-4 rounded-xl text-sm transition shadow-md">
-                    Entrar
-                </button>
-            </form>
-
-            <div class="mt-4 text-center">
-                <button type="button" onclick="alternarModoAuth()" id="btn-alternar-auth" class="text-xs text-blue-700 font-semibold hover:underline">
-                    Não tem uma conta? Cadastre-se
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- PAINEL PRINCIPAL -->
-    <div id="app-container" class="hidden flex flex-col min-h-screen">
-        <header class="bg-blue-900/90 backdrop-blur-md text-white shadow-lg p-4 sticky top-0 z-10 border-b border-blue-700/50">
-            <div class="max-w-md mx-auto flex justify-between items-center">
-                <h1 class="text-base font-bold flex items-center gap-2">
-                    <span class="bg-blue-800 p-1.5 rounded-lg shadow-inner">⏱️</span> Meu Ponto Certo
-                </h1>
-                <div class="flex items-center gap-2">
-                    <span id="total-comprovantes" class="text-xs bg-blue-800 text-blue-100 px-2.5 py-1 rounded-full font-semibold border border-blue-600/50">0 ativos</span>
-                    <button onclick="fazerLogout()" class="text-xs bg-red-600/80 hover:bg-red-600 text-white px-2.5 py-1 rounded-lg font-semibold transition">Sair</button>
-                </div>
-            </div>
-        </header>
-
-        <main class="max-w-md w-full mx-auto p-4 flex-grow pb-24">
-            
-            <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-5 mb-6">
-                <h2 class="text-xs uppercase tracking-wider font-bold text-blue-900 mb-3 flex items-center gap-1.5">
-                    <span>➕</span> Adicionar Novo Comprovante
-                </h2>
                 
-                <form id="form-ponto" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Data do Ponto</label>
-                            <input type="date" id="data-ponto" required 
-                                   class="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Horário Impresso</label>
-                            <input type="time" id="hora-ponto" required 
-                                   class="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
-                        </div>
-                    </div>
+                avisoEl.innerText = 'Comprovante salvo com sucesso!';
+                avisoEl.classList.remove('text-blue-600');
+                avisoEl.classList.add('text-emerald-600');
+                setTimeout(() => avisoEl.classList.add('hidden'), 4000);
 
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Ponto</label>
-                        <select id="tipo-ponto" required
-                                class="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
-                            <option value="Entrada">🟢 Entrada</option>
-                            <option value="Saída">🔴 Saída</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Foto do Papelzinho</label>
-                        <input type="file" id="foto-ponto" accept="image/*" capture="environment" required
-                               class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-800 hover:file:bg-blue-100 cursor-pointer">
-                        <p class="text-[10px] text-slate-400 mt-1">Insira a foto. Poderá recortar e ajustar o comprovante a seguir.</p>
-                    </div>
-
-                    <button type="submit" id="btn-salvar"
-                            class="w-full bg-blue-800 hover:bg-blue-900 text-white font-semibold py-3 px-4 rounded-xl text-sm transition shadow-md active:scale-[0.98]">
-                        Salvar Comprovante
-                    </button>
-                </form>
-            </div>
-
-            <div>
-                <div class="flex items-center justify-between mb-2 px-1">
-                    <h2 class="text-xs uppercase tracking-wider font-bold text-white/90 drop-shadow-sm">
-                        Comprovantes Vigentes
-                    </h2>
-                    <span class="text-[11px] font-medium text-blue-200">Expiram após dia 10</span>
-                </div>
-
-                <div class="bg-white/95 backdrop-blur-sm rounded-xl p-3 mb-3 shadow-md border border-white/20 flex items-center gap-2">
-                    <span class="text-slate-400 text-sm">🔍</span>
-                    <input type="date" id="filtro-data" placeholder="Filtrar por data específica..." 
-                           class="w-full bg-transparent text-xs text-slate-700 focus:outline-none font-medium">
-                    <button type="button" onclick="limparFiltro()" id="btn-limpar-filtro" class="hidden text-xs text-blue-700 font-semibold px-2 py-1 bg-blue-50 rounded-lg hover:bg-blue-100">Limpar</button>
-                </div>
-
-                <div id="lista-comprovantes" class="space-y-3"></div>
-
-                <div id="vazio-state" class="hidden text-center py-12 bg-white/90 backdrop-blur-sm rounded-2xl border border-dashed border-blue-300/50 shadow-md">
-                    <p class="text-3xl mb-2">📂</p>
-                    <p class="text-sm text-slate-700 font-semibold">Nenhum comprovante encontrado</p>
-                    <p class="text-xs text-slate-400 mt-1">Tente ajustar a busca ou envie um novo ponto.</p>
-                </div>
-            </div>
-
-            <div class="mt-12 text-center border-t border-blue-800/50 pt-6">
-                <button onclick="excluirConta()" class="text-xs text-red-300 hover:text-red-100 underline font-medium">
-                    Excluir minha conta permanentemente
-                </button>
-            </div>
-        </main>
-    </div>
-
-    <!-- MODAL DE CORTE DE IMAGEM -->
-    <div id="modal-corte" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col items-center justify-between p-4">
-        <div class="text-white text-xs font-semibold py-2">Ajuste o recorte no comprovante</div>
-        <div class="w-full max-w-md flex-grow flex items-center justify-center overflow-hidden my-2">
-            <img id="img-para-cortar" class="max-h-[70vh] block max-w-full" src="" alt="Cortar imagem">
-        </div>
-        <div class="w-full max-w-md flex gap-3 pb-2">
-            <button type="button" onclick="cancelarCorte()" class="w-1/2 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl text-sm transition">
-                Cancelar
-            </button>
-            <button type="button" onclick="confirmarCorte()" class="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-sm transition">
-                Confirmar Corte
-            </button>
-        </div>
-    </div>
-
-    <!-- Modal de Visualização Ampliada -->
-    <div id="modal-imagem" class="fixed inset-0 bg-black/90 z-50 hidden flex flex-col items-center justify-center p-4">
-        <button onclick="fecharModal()" class="absolute top-4 right-4 text-white text-3xl font-light bg-white/10 w-10 h-10 rounded-full flex items-center justify-center">×</button>
-        <img id="img-modal" class="max-w-full max-h-[80vh] rounded-xl object-contain mb-4 border border-white/10" src="" alt="Comprovante ampliado">
-        <div id="modal-info" class="text-white text-xs font-medium text-center bg-blue-900/80 border border-blue-500/30 px-4 py-2 rounded-full shadow-lg"></div>
-    </div>
-
-    <script>
-        const SUPABASE_URL = 'https://xxgcoovcgwojsbfupwkr.supabase.co';
-        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_ht0B99TeSvoxZn46W21C5w_4E-hQxKt';
-        
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-
-        let isCadastrando = false;
-        let currentUser = null;
-        let comprovantes = [];
-        let cropper = null;
-        let arquivoOriginal = null;
-
-        const agora = new Date();
-        document.getElementById('data-ponto').valueAsDate = agora;
-        document.getElementById('hora-ponto').value = agora.toTimeString().substring(0, 5);
-
-        function alternarModoAuth() {
-            isCadastrando = !isCadastrando;
-            const subtitle = document.getElementById('auth-subtitle');
-            const btnSubmit = document.getElementById('btn-auth-submit');
-            const btnAlternar = document.getElementById('btn-alternar-auth');
-            const senhaAviso = document.getElementById('senha-aviso');
-
-            limparErrosAuth();
-
-            if (isCadastrando) {
-                subtitle.innerText = 'Crie sua nova conta';
-                btnSubmit.innerText = 'Cadastrar Conta';
-                btnAlternar.innerText = 'Já tem uma conta? Faça login';
-                senhaAviso.classList.remove('hidden');
-            } else {
-                subtitle.innerText = 'Entre com sua conta para acessar';
-                btnSubmit.innerText = 'Entrar';
-                btnAlternar.innerText = 'Não tem uma conta? Cadastre-se';
-                senhaAviso.classList.add('hidden');
-            }
-        }
-
-        function limparErrosAuth() {
-            document.getElementById('auth-erro').classList.add('hidden');
-            document.getElementById('auth-sucesso').classList.add('hidden');
-        }
-
-        function mostrarErroAuth(msg) {
-            const el = document.getElementById('auth-erro');
-            el.innerText = msg;
-            el.classList.remove('hidden');
-        }
-
-        function mostrarSucessoAuth(msg) {
-            const el = document.getElementById('auth-sucesso');
-            el.innerText = msg;
-            el.classList.remove('hidden');
-        }
-
-        function validarSenhaForte(senha) {
-            const minOito = senha.length >= 8;
-            const temMaiuscula = /[A-Z]/.test(senha);
-            const temEspecial = /[!@#$%^&*(),.?":{}|<>]/.test(senha);
-            return minOito && temMaiuscula && temEspecial;
-        }
-
-        document.getElementById('form-auth').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            limparErrosAuth();
-
-            const email = document.getElementById('auth-email').value;
-            const senha = document.getElementById('auth-senha').value;
-
-            if (isCadastrando) {
-                if (!validarSenhaForte(senha)) {
-                    mostrarErroAuth('A senha deve ter no mínimo 8 caracteres, conter pelo menos uma letra maiúscula e um caractere especial.');
-                    return;
-                }
-
-                const { data, error } = await supabaseClient.auth.signUp({
-                    email: email,
-                    password: senha,
-                    options: {
-                        emailRedirectTo: window.location.href
-                    }
-                });
-
-                if (error) {
-                    mostrarErroAuth(error.message);
-                } else {
-                    mostrarSucessoAuth('Cadastro realizado! Um e-mail de confirmação foi enviado.');
-                }
-            } else {
-                const { data, error } = await supabaseClient.auth.signInWithPassword({
-                    email: email,
-                    password: senha
-                });
-
-                if (error) {
-                    mostrarErroAuth('E-mail ou senha incorretos, ou e-mail ainda não confirmado.');
-                } else {
-                    verificarSessao();
-                }
-            }
-        });
-
-        async function verificarSessao() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
-                currentUser = session.user;
-                document.getElementById('auth-container').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
-                carregarComprovantesSupabase();
-            } else {
-                document.getElementById('auth-container').classList.remove('hidden');
-                document.getElementById('app-container').classList.add('hidden');
-            }
-        }
-
-        async function fazerLogout() {
-            await supabaseClient.auth.signOut();
-            window.location.reload();
-        }
-
-        async function excluirConta() {
-            if (confirm('Tem certeza absoluta que deseja excluir sua conta e todos os dados salvos?')) {
-                alert('Para sua segurança, a exclusão de conta está vinculada ao painel de configurações do Supabase.');
-            }
-        }
-
-        function calcularExpiracao(dataStr) {
-            const data = new Date(dataStr + 'T00:00:00');
-            let ano = data.getFullYear();
-            let mes = data.getMonth() + 1;
-
-            if (mes > 11) {
-                mes = 0;
-                ano++;
-            }
-            return new Date(ano, mes, 10);
-        }
-
-        // INTERCEPTA O ARQUIVO SELECIONADO PARA ABRIR O MODAL DE CORTE
-        document.getElementById('foto-ponto').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            arquivoOriginal = file;
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const imgEl = document.getElementById('img-para-cortar');
-                imgEl.src = event.target.result;
-                document.getElementById('modal-corte').classList.remove('hidden');
-
-                if (cropper) {
-                    cropper.destroy();
-                }
-                cropper = new Cropper(imgEl, {
-                    aspectRatio: NaN, // Livre para ajustar o quadrado do papelzinho
-                    viewMode: 1,
-                    autoCropArea: 0.8,
-                });
-            };
-            reader.readAsDataURL(file);
-        });
-
-        function cancelarCorte() {
-            document.getElementById('modal-corte').classList.add('hidden');
-            document.getElementById('foto-ponto').value = '';
-            if (cropper) {
-                cropper.destroy();
-                cropper = null;
-            }
-        }
-
-        function confirmarCorte() {
-            if (!cropper) return;
-
-            const canvas = cropper.getCroppedCanvas({
-                maxWidth: 1000,
-                maxHeight: 1000,
-            });
-
-            canvas.toBlob(async (blob) => {
-                document.getElementById('modal-corte').classList.add('hidden');
-                if (cropper) {
-                    cropper.destroy();
-                    cropper = null;
-                }
-
-                // Prossegue com o envio do blob cortado para o Supabase
-                await enviarComprovanteParaNuvem(blob);
-            }, 'image/jpeg', 0.8);
-        }
-
-        async function carregarComprovantesSupabase() {
-            const hoje = new Date();
-            hoje.setHours(0, 0, 0, 0);
-
-            const { data, error } = await supabaseClient
-                .from('pontos')
-                .select('*')
-                .eq('user_id', currentUser.id);
-
-            if (error) {
-                console.error('Erro ao carregar do Supabase:', error);
-                return;
-            }
-
-            comprovantes = data.filter(item => {
-                const expiracao = new Date(item.expiracao);
-                return expiracao >= hoje;
-            });
-
-            renderizar();
-        }
-
-        function renderizar() {
-            const listaEl = document.getElementById('lista-comprovantes');
-            const vazioEl = document.getElementById('vazio-state');
-            const totalEl = document.getElementById('total-comprovantes');
-            const filtroData = document.getElementById('filtro-data').value;
-            const btnLimpar = document.getElementById('btn-limpar-filtro');
-
-            if (filtroData) {
-                btnLimpar.classList.remove('hidden');
-            } else {
-                btnLimpar.classList.add('hidden');
-            }
-
-            let listaFiltrada = comprovantes;
-            if (filtroData) {
-                listaFiltrada = comprovantes.filter(item => item.data === filtroData);
-            }
-
-            listaEl.innerHTML = '';
-            totalEl.innerText = `${comprovantes.length} ${comprovantes.length === 1 ? 'ativo' : 'ativos'}`;
-
-            if (listaFiltrada.length === 0) {
-                vazioEl.classList.remove('hidden');
-                return;
-            }
-
-            vazioEl.classList.add('hidden');
-            listaFiltrada.sort((a, b) => new Date(b.data + 'T' + (b.hora || '00:00')) - new Date(a.data + 'T' + (a.hora || '00:00')));
-
-            listaFiltrada.forEach((item) => {
-                const dataFormatada = new Date(item.data + 'T00:00:00').toLocaleDateString('pt-BR');
-                const horaExibida = item.hora || '00:00';
-                const expFormatada = new Date(item.expiracao).toLocaleDateString('pt-BR');
-                const tipoBadgeColor = item.tipo === 'Entrada' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-rose-100 text-rose-800 border-rose-200';
-
-                const card = document.createElement('div');
-                card.className = 'bg-white/95 backdrop-blur-sm rounded-2xl p-3 shadow-md border border-white/20 flex items-center justify-between gap-3';
-
-                card.innerHTML = `
-                    <div class="flex items-center gap-3 cursor-pointer flex-grow" onclick="abrirModal('${item.imagem_url}', '${dataFormatada} às ${horaExibida} (${item.tipo})', '${expFormatada}')">
-                        <img src="${item.imagem_url}" class="w-14 h-14 object-cover rounded-xl border border-slate-200 flex-shrink-0 shadow-sm" alt="Miniatura ponto">
-                        <div>
-                            <div class="flex items-center gap-2 mb-0.5">
-                                <span class="text-xs font-bold text-slate-800">${dataFormatada} - ${horaExibida}</span>
-                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${tipoBadgeColor}">${item.tipo}</span>
-                            </div>
-                            <p class="text-[11px] text-slate-500">Expira em: ${expFormatada}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <button onclick="abrirModal('${item.imagem_url}', '${dataFormatada} às ${horaExibida} (${item.tipo})', '${expFormatada}')" class="p-2 text-slate-400 hover:text-blue-700 rounded-lg transition" title="Ver imagem">
-                            🔍
-                        </button>
-                        <button onclick="excluirItem(${item.id})" class="p-2 text-slate-400 hover:text-red-500 rounded-lg transition" title="Excluir">
-                            🗑️
-                        </button>
-                    </div>
-                `;
-                listaEl.appendChild(card);
-            });
-        }
-
-        document.getElementById('filtro-data').addEventListener('input', renderizar);
-
-        function limparFiltro() {
-            document.getElementById('filtro-data').value = '';
-            renderizar();
-        }
-
-        // Disparado ao submeter o form, após o corte ter sido feito
-        document.getElementById('form-ponto').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const inputFile = document.getElementById('foto-ponto').files[0];
-            if (!inputFile) {
-                alert('Por favor, selecione uma foto do comprovante.');
-                return;
-            }
-            // O fluxo de envio é acionado pelo botão "Confirmar Corte" no modal.
-        });
-
-        async function enviarComprovanteParaNuvem(imagemBlob) {
-            const inputData = document.getElementById('data-ponto').value;
-            const inputHora = document.getElementById('hora-ponto').value;
-            const inputTipo = document.getElementById('tipo-ponto').value;
-
-            if (!inputData || !inputHora) return;
-
-            const btnSalvar = document.getElementById('btn-salvar');
-            btnSalvar.innerText = 'Enviando para a nuvem...';
-            btnSalvar.disabled = true;
-
-            try {
-                const fileName = `${currentUser.id}/${Date.now()}.jpg`;
-
-                const { data: uploadData, error: uploadError } = await supabaseClient.storage
-                    .from('comprovantes')
-                    .upload(fileName, imagemBlob, {
-                        contentType: 'image/jpeg'
-                    });
-
-                if (uploadError) throw uploadError;
-
-                const { data: publicUrlData } = supabaseClient.storage
-                    .from('comprovantes')
-                    .getPublicUrl(fileName);
-
-                const imageUrl = publicUrlData.publicUrl;
-                const dataExpiracao = calcularExpiracao(inputData);
-
-                const { error: insertError } = await supabaseClient
-                    .from('pontos')
-                    .insert([
-                        {
-                            user_id: currentUser.id,
-                            data: inputData,
-                            hora: inputHora,
-                            tipo: inputTipo,
-                            expiracao: dataExpiracao.toISOString(),
-                            imagem_url: imageUrl
-                        }
-                    ]);
-
-                if (insertError) throw insertError;
-
-                await carregarComprovantesSupabase();
-                document.getElementById('foto-ponto').value = '';
             } catch (erro) {
                 alert('Erro ao salvar comprovante na nuvem. Verifique sua conexão.');
                 console.error(erro);
-            } finally {
-                btnSalvar.innerText = 'Salvar Comprovante';
-                btnSalvar.disabled = false;
+                avisoEl.classList.add('hidden');
             }
         }
 
