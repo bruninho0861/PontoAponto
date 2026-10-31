@@ -7,7 +7,1135 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supa<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Ponto Certo - Controle de Comprovantes</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Cropper.js (Ferramenta de corte de imagem) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <style>
+        body {
+            background-color: #1e3a8a;
+            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'%3E%3Cpath d='M14 16h12v4H14v-4zm0 6h12v4H14v-4zm16-6h36v16H30V16zm4 4h28v8H34v-8zM14 36h12v4H14v-4zm0 6h12v4H14v-4zm16-6h36v16H30V36zm4 4h28v8H34v-8z'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: 80px 80px;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- TELA DE AUTENTICAÇÃO -->
+    <div id="auth-container" class="max-w-md w-full mx-auto p-4 flex-grow flex items-center justify-center">
+        <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 w-full">
+            <div class="text-center mb-6">
+                <span class="text-3xl">⏱️</span>
+                <h1 class="text-lg font-bold text-blue-900 mt-1">Meu Ponto Certo</h1>
+                <p id="auth-subtitle" class="text-xs text-slate-500 mt-0.5">Entre com sua conta para acessar</p>
+            </div>
+
+            <form id="form-auth" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">E-mail</label>
+                    <input type="email" id="auth-email" required 
+                           class="w-full rounded-xl border border-slate-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Senha</label>
+                    <input type="password" id="auth-senha" required 
+                           class="w-full rounded-xl border border-slate-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium"
+                           placeholder="Mín. 8 caracteres, 1 maiúscula, 1 especial">
+                    <p id="senha-aviso" class="text-[10px] text-slate-400 mt-1 hidden">Mínimo 8 caracteres, ao menos uma letra maiúscula e um caractere especial (!@#$%...).</p>
+                </div>
+
+                <div id="auth-erro" class="hidden text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200"></div>
+                <div id="auth-sucesso" class="hidden text-xs text-emerald-600 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200"></div>
+
+                <button type="submit" id="btn-auth-submit"
+                        class="w-full bg-blue-800 hover:bg-blue-900 text-white font-semibold py-3 px-4 rounded-xl text-sm transition shadow-md">
+                    Entrar
+                </button>
+            </form>
+
+            <div class="mt-4 text-center">
+                <button type="button" onclick="alternarModoAuth()" id="btn-alternar-auth" class="text-xs text-blue-700 font-semibold hover:underline">
+                    Não tem uma conta? Cadastre-se
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL PRINCIPAL -->
+    <div id="app-container" class="hidden flex flex-col min-h-screen">
+        <header class="bg-blue-900/90 backdrop-blur-md text-white shadow-lg p-4 sticky top-0 z-10 border-b border-blue-700/50">
+            <div class="max-w-md mx-auto flex justify-between items-center">
+                <h1 class="text-base font-bold flex items-center gap-2">
+                    <span class="bg-blue-800 p-1.5 rounded-lg shadow-inner">⏱️</span> Meu Ponto Certo
+                </h1>
+                <div class="flex items-center gap-2">
+                    <span id="total-comprovantes" class="text-xs bg-blue-800 text-blue-100 px-2.5 py-1 rounded-full font-semibold border border-blue-600/50">0 ativos</span>
+                    <button onclick="fazerLogout()" class="text-xs bg-red-600/80 hover:bg-red-600 text-white px-2.5 py-1 rounded-lg font-semibold transition">Sair</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-md w-full mx-auto p-4 flex-grow pb-24">
+            
+            <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-5 mb-6">
+                <div class="bg-blue-800 text-white font-bold py-3 px-4 rounded-xl text-sm shadow-md mb-4 text-center">
+                    Adicione aqui seu comprovante ou tire a foto do seu comprovante
+                </div>
+                
+                <!-- BOTÕES PARA CAPTURAR A FOTO PRIMEIRO -->
+                <div id="secao-captura">
+                    <label class="block text-xs font-semibold text-slate-600 mb-2">1. Capturar Comprovante</label>
+                    <div class="grid grid-cols-2 gap-3 mb-2">
+                        <button type="button" onclick="document.getElementById('input-camera').click()"
+                                class="bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 px-3 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-sm">
+                            <span>📸</span> Tirar Foto
+                        </button>
+                        <button type="button" onclick="document.getElementById('input-galeria').click()"
+                                class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-3 px-3 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-sm">
+                            <span>📂</span> Da Galeria
+                        </button>
+                    </div>
+
+                    <input type="file" id="input-camera" accept="image/*" capture="environment" class="hidden">
+                    <input type="file" id="input-galeria" accept="image/*" class="hidden">
+                    <p class="text-[10px] text-slate-400">Após tirar ou escolher a foto, você fará o corte e preencherá os dados.</p>
+                </div>
+
+                <!-- FORMULÁRIO QUE APARECE APÓS RECORTAR A FOTO -->
+                <form id="form-ponto" class="space-y-4 hidden mt-4 pt-4 border-t border-slate-200">
+                    <div class="flex items-center gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                        <img id="miniatura-preview" class="w-12 h-12 object-cover rounded-lg border border-slate-300 shadow-sm" src="" alt="Prévia">
+                        <div>
+                            <p class="text-xs font-bold text-emerald-700">Foto cortada com sucesso!</p>
+                            <p class="text-[10px] text-slate-500">Preencha os dados abaixo e salve.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Data do Ponto</label>
+                            <input type="date" id="data-ponto" required 
+                                   class="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Horário Impresso</label>
+                            <input type="time" id="hora-ponto" required 
+                                   class="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Ponto</label>
+                        <select id="tipo-ponto" required
+                                class="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
+                            <option value="Entrada">🟢 Entrada</option>
+                            <option value="Saída">🔴 Saída</option>
+                        </select>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button type="button" onclick="cancelarEnvio()"
+                                class="w-1/3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-3 px-2 rounded-xl text-xs transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="btn-salvar"
+                                class="w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-xl text-xs transition shadow-md">
+                            Salvar na Nuvem
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+
+            <!-- CALENDÁRIO 6x2 E CONTROLE DE FÉRIAS -->
+            <section class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-4 mb-6">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h2 class="text-sm font-bold text-blue-900">📅 Minha escala 6x2</h2>
+                        <p class="text-[10px] text-slate-500">Acompanhe seus dias de trabalho, folga e férias</p>
+                    </div>
+                    <button type="button" onclick="abrirConfiguracaoEscala()" class="text-[11px] font-semibold bg-blue-100 text-blue-800 px-3 py-2 rounded-lg">Configurar</button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3">
+                        <p class="text-[10px] text-emerald-700 font-semibold">Próxima folga</p>
+                        <p id="resumo-proxima-folga" class="text-sm font-bold text-emerald-900 mt-1">Configure sua escala</p>
+                    </div>
+                    <div class="rounded-xl bg-violet-50 border border-violet-200 p-3">
+                        <p class="text-[10px] text-violet-700 font-semibold">Próximas férias</p>
+                        <p id="resumo-proximas-ferias" class="text-sm font-bold text-violet-900 mt-1">Nenhuma cadastrada</p>
+                    </div>
+                </div>
+
+                <div id="aviso-config-escala" class="hidden rounded-xl bg-amber-50 border border-amber-200 p-3 mb-3 text-xs text-amber-800">
+                    Para começar, configure uma data de referência e informe se ela é o primeiro dia de trabalho ou o primeiro dia de folga.
+                </div>
+
+                <div class="flex items-center justify-between mb-3">
+                    <button type="button" onclick="mudarMesCalendario(-1)" class="w-9 h-9 rounded-lg bg-slate-100 text-slate-700 font-bold">‹</button>
+                    <h3 id="titulo-mes-calendario" class="text-sm font-bold text-slate-800 capitalize"></h3>
+                    <button type="button" onclick="mudarMesCalendario(1)" class="w-9 h-9 rounded-lg bg-slate-100 text-slate-700 font-bold">›</button>
+                </div>
+
+                <div class="grid grid-cols-7 gap-1 text-center mb-1">
+                    <span class="text-[10px] font-bold text-slate-400">Dom</span>
+                    <span class="text-[10px] font-bold text-slate-400">Seg</span>
+                    <span class="text-[10px] font-bold text-slate-400">Ter</span>
+                    <span class="text-[10px] font-bold text-slate-400">Qua</span>
+                    <span class="text-[10px] font-bold text-slate-400">Qui</span>
+                    <span class="text-[10px] font-bold text-slate-400">Sex</span>
+                    <span class="text-[10px] font-bold text-slate-400">Sáb</span>
+                </div>
+                <div id="grade-calendario" class="grid grid-cols-7 gap-1"></div>
+
+                <div class="flex flex-wrap gap-x-3 gap-y-2 mt-3 text-[10px] text-slate-600">
+                    <span class="flex items-center gap-1"><i class="w-3 h-3 rounded bg-blue-200 border border-blue-300"></i> Trabalho</span>
+                    <span class="flex items-center gap-1"><i class="w-3 h-3 rounded bg-emerald-200 border border-emerald-300"></i> Folga</span>
+                    <span class="flex items-center gap-1"><i class="w-3 h-3 rounded bg-violet-200 border border-violet-300"></i> Férias</span>
+                    <span class="flex items-center gap-1"><i class="w-3 h-3 rounded bg-amber-200 border border-amber-300"></i> Retorno</span>
+                </div>
+
+                <div class="border-t border-slate-200 mt-4 pt-4">
+                    <h3 class="text-xs font-bold text-slate-800 mb-2">🏖️ Cadastrar férias</h3>
+                    <form id="form-ferias" class="space-y-2">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label for="ferias-inicio" class="block text-[10px] font-semibold text-slate-600 mb-1">Primeiro dia</label>
+                                <input id="ferias-inicio" type="date" required class="w-full rounded-lg border border-slate-300 p-2 text-xs bg-slate-50">
+                            </div>
+                            <div>
+                                <label for="ferias-dias" class="block text-[10px] font-semibold text-slate-600 mb-1">Quantidade de dias</label>
+                                <input id="ferias-dias" type="number" min="1" max="365" required placeholder="Ex.: 30" class="w-full rounded-lg border border-slate-300 p-2 text-xs bg-slate-50">
+                            </div>
+                        </div>
+                        <p id="preview-ferias" class="text-[10px] text-slate-500">Informe a data inicial e a quantidade de dias para calcular o retorno.</p>
+                        <button id="btn-salvar-ferias" type="submit" class="w-full bg-violet-700 hover:bg-violet-800 text-white font-semibold py-2.5 rounded-lg text-xs">Salvar férias</button>
+                    </form>
+                    <div class="mt-4">
+                        <h4 class="text-[11px] font-bold text-slate-700 mb-2">Férias cadastradas</h4>
+                        <div id="lista-ferias" class="space-y-2">
+                            <p class="text-[10px] text-slate-400">Carregando...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODAL DE CONFIGURAÇÃO DA ESCALA -->
+            <div id="modal-config-escala" class="hidden fixed inset-0 z-40 bg-black/70 p-4 flex items-center justify-center">
+                <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-2xl">
+                    <h3 class="text-base font-bold text-blue-900 mb-1">Configurar escala 6x2</h3>
+                    <p class="text-xs text-slate-500 mb-4">Escolha uma data que você saiba identificar na sua escala. A partir dela, o calendário calcula os ciclos de 6 dias de trabalho e 2 de folga.</p>
+                    <form id="form-config-escala" class="space-y-3">
+                        <div>
+                            <label for="escala-data-referencia" class="block text-xs font-semibold text-slate-600 mb-1">Data de referência</label>
+                            <input id="escala-data-referencia" type="date" required class="w-full rounded-xl border border-slate-300 p-3 text-sm bg-slate-50">
+                        </div>
+                        <div>
+                            <label for="escala-tipo-referencia" class="block text-xs font-semibold text-slate-600 mb-1">Nessa data você estava...</label>
+                            <select id="escala-tipo-referencia" required class="w-full rounded-xl border border-slate-300 p-3 text-sm bg-slate-50">
+                                <option value="trabalho">No 1º dia de trabalho (início dos 6 dias)</option>
+                                <option value="folga">No 1º dia de folga (início dos 2 dias)</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-2 pt-1">
+                            <button type="button" onclick="fecharConfiguracaoEscala()" class="w-1/2 bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl text-xs">Cancelar</button>
+                            <button type="submit" id="btn-salvar-escala" class="w-1/2 bg-blue-800 text-white font-semibold py-3 rounded-xl text-xs">Salvar escala</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- SEÇÃO DE COMPROVANTES VIGENTES -->
+            <div>
+                <div class="flex items-center justify-between mb-2 px-1">
+                    <button type="button" onclick="toggleSecaoComprovantes()" class="flex items-center gap-1.5 text-xs uppercase tracking-wider font-bold text-white/90 hover:text-white transition">
+                        <span id="icone-seta">▼</span> Comprovantes Vigentes <span class="text-[10px] font-normal text-blue-200">(Expiram após dia 10)</span>
+                    </button>
+                    <button type="button" onclick="toggleSecaoComprovantes()" id="btn-toggle-texto" class="text-[11px] font-semibold bg-blue-800/80 hover:bg-blue-800 text-white px-2.5 py-1 rounded-lg border border-blue-600/50 transition">
+                        Ocultar
+                    </button>
+                </div>
+
+                <div id="container-comprovantes" class="space-y-3 transition-all duration-300">
+                    <div class="bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-md border border-white/20 flex items-center gap-2">
+                        <span class="text-slate-400 text-sm">🔍</span>
+                        <input type="date" id="filtro-data" placeholder="Filtrar por data específica..." 
+                               class="w-full bg-transparent text-xs text-slate-700 focus:outline-none font-medium">
+                        <button type="button" onclick="limparFiltro()" id="btn-limpar-filtro" class="hidden text-xs text-blue-700 font-semibold px-2 py-1 bg-blue-50 rounded-lg hover:bg-blue-100">Limpar</button>
+                    </div>
+
+                    <div id="lista-comprovantes" class="space-y-3"></div>
+
+                    <div id="vazio-state" class="hidden text-center py-12 bg-white/90 backdrop-blur-sm rounded-2xl border border-dashed border-blue-300/50 shadow-md">
+                        <p class="text-3xl mb-2">📂</p>
+                        <p class="text-sm text-slate-700 font-semibold">Nenhum comprovante encontrado</p>
+                        <p class="text-xs text-slate-400 mt-1">Tente ajustar a busca ou envie um novo ponto.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 text-center border-t border-blue-800/50 pt-6">
+                <button onclick="excluirConta()" class="text-xs text-red-300 hover:text-red-100 underline font-medium">
+                    Excluir minha conta permanentemente
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL DE CORTE DE IMAGEM -->
+    <div id="modal-corte" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col items-center justify-between p-4">
+        <div class="text-white text-xs font-semibold py-2">Ajuste o recorte no comprovante</div>
+        <div class="w-full max-w-md flex-grow flex items-center justify-center overflow-hidden my-2">
+            <img id="img-para-cortar" class="max-h-[70vh] block max-w-full" src="" alt="Cortar imagem">
+        </div>
+        <div class="w-full max-w-md flex gap-3 pb-2">
+            <button type="button" onclick="cancelarCorte()" class="w-1/2 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl text-sm transition">
+                Cancelar
+            </button>
+            <button type="button" onclick="confirmarCorte()" class="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-sm transition">
+                Avançar para Dados
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Visualização Ampliada -->
+    <div id="modal-imagem" class="fixed inset-0 bg-black/90 z-50 hidden flex flex-col items-center justify-center p-4">
+        <button onclick="fecharModal()" class="absolute top-4 right-4 text-white text-3xl font-light bg-white/10 w-10 h-10 rounded-full flex items-center justify-center">×</button>
+        <img id="img-modal" class="max-w-full max-h-[80vh] rounded-xl object-contain mb-4 border border-white/10" src="" alt="Comprovante ampliado">
+        <div id="modal-info" class="text-white text-xs font-medium text-center bg-blue-900/80 border border-blue-500/30 px-4 py-2 rounded-full shadow-lg"></div>
+    </div>
+
+    <!-- MODAL DE CAIXA DE MENSAGEM CUSTOMIZADA -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center space-y-4">
+            <div id="custom-modal-icon" class="text-3xl">⚠️</div>
+            <h3 id="custom-modal-title" class="text-base font-bold text-slate-800">Aviso</h3>
+            <p id="custom-modal-msg" class="text-xs text-slate-600 leading-relaxed"></p>
+            <div id="custom-modal-actions" class="flex gap-2 pt-2">
+                <button id="custom-modal-btn-ok" onclick="fecharModalCustomizado()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2.5 rounded-xl text-xs transition">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://xxgcoovcgwojsbfupwkr.supabase.co';
+        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_ht0B99TeSvoxZn46W21C5w_4E-hQxKt';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+        let isCadastrando = false;
+        let currentUser = null;
+        let comprovantes = [];
+        let cropper = null;
+        let blobFinalCortado = null;
+        let comprovantesOcultos = false;
+
+        // Caixa de mensagem customizada para substituir alert() e confirm()
+        function mostrarMensagem(titulo, mensagem, icone = '⚠️', callbackOk = null) {
+            document.getElementById('custom-modal-title').innerText = titulo;
+            document.getElementById('custom-modal-msg').innerText = mensagem;
+            document.getElementById('custom-modal-icon').innerText = icone;
+            
+            const actionsContainer = document.getElementById('custom-modal-actions');
+            actionsContainer.innerHTML = `<button id="custom-modal-btn-ok" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2.5 rounded-xl text-xs transition">OK</button>`;
+            
+            document.getElementById('custom-modal-btn-ok').onclick = function() {
+                fecharModalCustomizado();
+                if (callbackOk) callbackOk();
+            };
+
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        function mostrarConfirmacao(titulo, mensagem, callbackSim) {
+            document.getElementById('custom-modal-title').innerText = titulo;
+            document.getElementById('custom-modal-msg').innerText = mensagem;
+            document.getElementById('custom-modal-icon').innerText = '❓';
+            
+            const actionsContainer = document.getElementById('custom-modal-actions');
+            actionsContainer.innerHTML = `
+                <button id="btn-modal-nao" class="w-1/2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2.5 rounded-xl text-xs transition">Não</button>
+                <button id="btn-modal-sim" class="w-1/2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-xl text-xs transition">Sim</button>
+            `;
+
+            document.getElementById('btn-modal-nao').onclick = fecharModalCustomizado;
+            document.getElementById('btn-modal-sim').onclick = function() {
+                fecharModalCustomizado();
+                callbackSim();
+            };
+
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        function fecharModalCustomizado() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        function toggleSecaoComprovantes() {
+            comprovantesOcultos = !comprovantesOcultos;
+            const container = document.getElementById('container-comprovantes');
+            const btnTexto = document.getElementById('btn-toggle-texto');
+            const iconeSeta = document.getElementById('icone-seta');
+
+            if (comprovantesOcultos) {
+                container.classList.add('hidden');
+                btnTexto.innerText = 'Exibir';
+                iconeSeta.innerText = '▶';
+            } else {
+                container.classList.remove('hidden');
+                btnTexto.innerText = 'Ocultar';
+                iconeSeta.innerText = '▼';
+            }
+        }
+
+        function alternarModoAuth() {
+            isCadastrando = !isCadastrando;
+            const subtitle = document.getElementById('auth-subtitle');
+            const btnSubmit = document.getElementById('btn-auth-submit');
+            const btnAlternar = document.getElementById('btn-alternar-auth');
+            const senhaAviso = document.getElementById('senha-aviso');
+
+            limparErrosAuth();
+
+            if (isCadastrando) {
+                subtitle.innerText = 'Crie sua nova conta';
+                btnSubmit.innerText = 'Cadastrar Conta';
+                btnAlternar.innerText = 'Já tem uma conta? Faça login';
+                senhaAviso.classList.remove('hidden');
+            } else {
+                subtitle.innerText = 'Entre com sua conta para acessar';
+                btnSubmit.innerText = 'Entrar';
+                btnAlternar.innerText = 'Não tem uma conta? Cadastre-se';
+                senhaAviso.classList.add('hidden');
+            }
+        }
+
+        function limparErrosAuth() {
+            document.getElementById('auth-erro').classList.add('hidden');
+            document.getElementById('auth-sucesso').classList.add('hidden');
+        }
+
+        function mostrarErroAuth(msg) {
+            const el = document.getElementById('auth-erro');
+            el.innerText = msg;
+            el.classList.remove('hidden');
+        }
+
+        function mostrarSucessoAuth(msg) {
+            const el = document.getElementById('auth-sucesso');
+            el.innerText = msg;
+            el.classList.remove('hidden');
+        }
+
+        function validarSenhaForte(senha) {
+            const minOito = senha.length >= 8;
+            const temMaiuscula = /[A-Z]/.test(senha);
+            const temEspecial = /[!@#$%^&*(),.?":{}|<>]/.test(senha);
+            return minOito && temMaiuscula && temEspecial;
+        }
+
+        document.getElementById('form-auth').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            limparErrosAuth();
+
+            const email = document.getElementById('auth-email').value;
+            const senha = document.getElementById('auth-senha').value;
+
+            if (isCadastrando) {
+                if (!validarSenhaForte(senha)) {
+                    mostrarErroAuth('A senha deve ter no mínimo 8 caracteres, conter pelo menos uma letra maiúscula e um caractere especial.');
+                    return;
+                }
+
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: senha,
+                    options: {
+                        emailRedirectTo: window.location.href
+                    }
+                });
+
+                if (error) {
+                    mostrarErroAuth(error.message);
+                } else {
+                    mostrarSucessoAuth('Cadastro realizado! Um e-mail de confirmação foi enviado.');
+                }
+            } else {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: senha
+                });
+
+                if (error) {
+                    mostrarErroAuth('E-mail ou senha incorretos, ou e-mail ainda não confirmado.');
+                } else {
+                    verificarSessao();
+                }
+            }
+        });
+
+        // ============================================================
+        // CALENDÁRIO 6x2 E CONTROLE DE FÉRIAS (Com Supabase e Upsert)
+        // ============================================================
+        let configuracaoEscala = null;
+        let feriasCadastradas = [];
+        let mesExibido = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+        function dataLocalISO(data) {
+            const ano = data.getFullYear();
+            const mes = String(data.getMonth() + 1).padStart(2, '0');
+            const dia = String(data.getDate()).padStart(2, '0');
+            return `${ano}-${mes}-${dia}`;
+        }
+
+        function dataDeISO(valor) {
+            const [ano, mes, dia] = valor.split('-').map(Number);
+            return new Date(ano, mes - 1, dia);
+        }
+
+        function adicionarDias(data, quantidade) {
+            const nova = new Date(data.getFullYear(), data.getMonth(), data.getDate());
+            nova.setDate(nova.getDate() + quantidade);
+            return nova;
+        }
+
+        function diferencaDias(dataA, dataB) {
+            const utcA = Date.UTC(dataA.getFullYear(), dataA.getMonth(), dataA.getDate());
+            const utcB = Date.UTC(dataB.getFullYear(), dataB.getMonth(), dataB.getDate());
+            return Math.round((utcA - utcB) / 86400000);
+        }
+
+        function formatarDataBR(valor) {
+            if (!valor) return '';
+            return dataDeISO(valor).toLocaleDateString('pt-BR');
+        }
+
+        function obterTipoDia(data) {
+            const iso = dataLocalISO(data);
+
+            for (const ferias of feriasCadastradas) {
+                const inicio = dataDeISO(ferias.data_inicio);
+                const fim = adicionarDias(inicio, Number(ferias.quantidade_dias) - 1);
+                const retorno = adicionarDias(fim, 1);
+                if (iso >= dataLocalISO(inicio) && iso <= dataLocalISO(fim)) return 'ferias';
+                if (iso === dataLocalISO(retorno)) return 'retorno';
+            }
+
+            if (!configuracaoEscala) return 'sem-configuracao';
+
+            const referencia = dataDeISO(configuracaoEscala.data_referencia);
+            let ciclo = ((diferencaDias(data, referencia) % 8) + 8) % 8;
+
+            if (configuracaoEscala.tipo_referencia === 'folga') {
+                return ciclo < 2 ? 'folga' : 'trabalho';
+            }
+            return ciclo < 6 ? 'trabalho' : 'folga';
+        }
+
+        async function carregarDadosCalendario() {
+            if (!currentUser) return;
+
+            try {
+                const [escalaResult, feriasResult] = await Promise.all([
+                    supabaseClient.from('escala_config')
+                        .select('data_referencia,tipo_referencia')
+                        .eq('user_id', currentUser.id)
+                        .maybeSingle(),
+                    supabaseClient.from('ferias')
+                        .select('id,data_inicio,quantidade_dias')
+                        .eq('user_id', currentUser.id)
+                        .order('data_inicio', { ascending: true })
+                ]);
+
+                if (!escalaResult.error && escalaResult.data) {
+                    configuracaoEscala = escalaResult.data;
+                } else {
+                    configuracaoEscala = null;
+                }
+
+                if (!feriasResult.error && feriasResult.data) {
+                    feriasCadastradas = feriasResult.data;
+                } else {
+                    feriasCadastradas = [];
+                }
+
+            } catch (err) {
+                console.warn('Erro ao carregar do Supabase:', err);
+            }
+
+            renderizarCalendario();
+            renderizarListaFerias();
+            atualizarResumosCalendario();
+        }
+
+        function abrirConfiguracaoEscala() {
+            if (configuracaoEscala) {
+                document.getElementById('escala-data-referencia').value = configuracaoEscala.data_referencia;
+                document.getElementById('escala-tipo-referencia').value = configuracaoEscala.tipo_referencia;
+            } else {
+                document.getElementById('escala-data-referencia').value = dataLocalISO(new Date());
+                document.getElementById('escala-tipo-referencia').value = 'trabalho';
+            }
+            document.getElementById('modal-config-escala').classList.remove('hidden');
+        }
+
+        function fecharConfiguracaoEscala() {
+            document.getElementById('modal-config-escala').classList.add('hidden');
+        }
+
+        document.getElementById('form-config-escala').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const dataReferencia = document.getElementById('escala-data-referencia').value;
+            const tipoReferencia = document.getElementById('escala-tipo-referencia').value;
+            const botao = document.getElementById('btn-salvar-escala');
+            botao.disabled = true;
+            botao.innerText = 'Salvando...';
+
+            try {
+                // Upsert direto no Supabase usando user_id como chave primária
+                const { error } = await supabaseClient.from('escala_config').upsert({
+                    user_id: currentUser.id,
+                    data_referencia: dataReferencia,
+                    tipo_referencia: tipoReferencia,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' });
+
+                if (error) throw error;
+
+                configuracaoEscala = { data_referencia: dataReferencia, tipo_referencia: tipoReferencia };
+                fecharConfiguracaoEscala();
+                renderizarCalendario();
+                atualizarResumosCalendario();
+                mostrarMensagem('Escala salva', 'Sua escala 6x2 foi salva na nuvem com sucesso.', '✅');
+            } catch (erro) {
+                console.error(erro);
+                mostrarMensagem('Erro', 'Não foi possível salvar sua escala no Supabase. Verifique se executou o script SQL das tabelas.', '❌');
+            } finally {
+                botao.disabled = false;
+                botao.innerText = 'Salvar escala';
+            }
+        });
+
+        function mudarMesCalendario(delta) {
+            mesExibido = new Date(mesExibido.getFullYear(), mesExibido.getMonth() + delta, 1);
+            renderizarCalendario();
+        }
+
+        function renderizarCalendario() {
+            const titulo = document.getElementById('titulo-mes-calendario');
+            const grade = document.getElementById('grade-calendario');
+            if (!titulo || !grade) return;
+
+            titulo.innerText = mesExibido.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+            grade.innerHTML = '';
+
+            const primeiroDia = new Date(mesExibido.getFullYear(), mesExibido.getMonth(), 1);
+            const ultimoDia = new Date(mesExibido.getFullYear(), mesExibido.getMonth() + 1, 0);
+            const deslocamento = primeiroDia.getDay();
+
+            for (let i = 0; i < deslocamento; i++) {
+                const vazio = document.createElement('div');
+                vazio.className = 'h-10';
+                grade.appendChild(vazio);
+            }
+
+            const estilos = {
+                trabalho: 'bg-blue-100 border-blue-200 text-blue-900',
+                folga: 'bg-emerald-100 border-emerald-300 text-emerald-900',
+                ferias: 'bg-violet-200 border-violet-300 text-violet-900',
+                retorno: 'bg-amber-200 border-amber-300 text-amber-900',
+                'sem-configuracao': 'bg-slate-50 border-slate-200 text-slate-500'
+            };
+            const rotulos = {
+                trabalho: 'Trabalho',
+                folga: 'Folga',
+                ferias: 'Férias',
+                retorno: 'Retorno',
+                'sem-configuracao': 'Configure'
+            };
+
+            for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
+                const data = new Date(mesExibido.getFullYear(), mesExibido.getMonth(), dia);
+                const tipo = obterTipoDia(data);
+                const celula = document.createElement('div');
+                celula.className = `h-10 rounded-lg border flex flex-col items-center justify-center ${estilos[tipo]}`;
+                const numero = document.createElement('span');
+                numero.className = 'text-xs font-bold leading-tight';
+                numero.textContent = dia;
+                const legenda = document.createElement('span');
+                legenda.className = 'text-[7px] leading-tight';
+                legenda.textContent = tipo === 'sem-configuracao' ? '—' : rotulos[tipo];
+                celula.append(numero, legenda);
+
+                if (dataLocalISO(data) === dataLocalISO(new Date())) {
+                    celula.classList.add('ring-2', 'ring-blue-600', 'ring-offset-1');
+                }
+                celula.title = `${data.toLocaleDateString('pt-BR')} - ${rotulos[tipo]}`;
+                grade.appendChild(celula);
+            }
+
+            document.getElementById('aviso-config-escala').classList.toggle('hidden', !!configuracaoEscala);
+        }
+
+        function atualizarPreviewFerias() {
+            const inicioValor = document.getElementById('ferias-inicio').value;
+            const dias = Number(document.getElementById('ferias-dias').value);
+            const preview = document.getElementById('preview-ferias');
+
+            if (!inicioValor || !Number.isInteger(dias) || dias < 1) {
+                preview.textContent = 'Informe a data inicial e a quantidade de dias para calcular o retorno.';
+                return;
+            }
+
+            const inicio = dataDeISO(inicioValor);
+            const ultimoDia = adicionarDias(inicio, dias - 1);
+            const retorno = adicionarDias(ultimoDia, 1);
+            preview.textContent = `Último dia de férias: ${ultimoDia.toLocaleDateString('pt-BR')} · Retorno: ${retorno.toLocaleDateString('pt-BR')}`;
+        }
+
+        document.getElementById('ferias-inicio').addEventListener('change', atualizarPreviewFerias);
+        document.getElementById('ferias-dias').addEventListener('input', atualizarPreviewFerias);
+
+        document.getElementById('form-ferias').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const inicioValor = document.getElementById('ferias-inicio').value;
+            const dias = Number(document.getElementById('ferias-dias').value);
+            if (!inicioValor || !Number.isInteger(dias) || dias < 1 || dias > 365) {
+                mostrarMensagem('Dados inválidos', 'Informe uma data válida e uma quantidade de 1 a 365 dias.');
+                return;
+            }
+
+            const inicio = dataDeISO(inicioValor);
+            const fim = adicionarDias(inicio, dias - 1);
+            const conflito = feriasCadastradas.some(item => {
+                const inicioExistente = dataDeISO(item.data_inicio);
+                const fimExistente = adicionarDias(inicioExistente, Number(item.quantidade_dias) - 1);
+                return inicio <= fimExistente && fim >= inicioExistente;
+            });
+
+            if (conflito) {
+                mostrarMensagem('Período sobreposto', 'Esse período cruza com férias que já estão cadastradas. Confira as datas antes de salvar.');
+                return;
+            }
+
+            const botao = document.getElementById('btn-salvar-ferias');
+            botao.disabled = true;
+            botao.innerText = 'Salvando...';
+
+            try {
+                const { error } = await supabaseClient.from('ferias').insert({
+                    user_id: currentUser.id,
+                    data_inicio: inicioValor,
+                    quantidade_dias: dias
+                });
+                if (error) throw error;
+
+                document.getElementById('form-ferias').reset();
+                atualizarPreviewFerias();
+                await carregarDadosCalendario();
+                mostrarMensagem('Férias cadastradas', 'O período foi salvo na nuvem e já aparece no calendário.', '✅');
+            } catch (erro) {
+                console.error(erro);
+                mostrarMensagem('Erro', 'Não foi possível salvar as férias no Supabase.', '❌');
+            } finally {
+                botao.disabled = false;
+                botao.innerText = 'Salvar férias';
+            }
+        });
+
+        function renderizarListaFerias() {
+            const lista = document.getElementById('lista-ferias');
+            lista.innerHTML = '';
+
+            if (!feriasCadastradas.length) {
+                lista.innerHTML = '<p class="text-[10px] text-slate-400">Nenhum período de férias cadastrado.</p>';
+                return;
+            }
+
+            feriasCadastradas.forEach(item => {
+                const inicio = dataDeISO(item.data_inicio);
+                const ultimoDia = adicionarDias(inicio, Number(item.quantidade_dias) - 1);
+                const retorno = adicionarDias(ultimoDia, 1);
+
+                const card = document.createElement('div');
+                card.className = 'flex items-center justify-between gap-2 bg-violet-50 border border-violet-100 rounded-xl p-3';
+                const texto = document.createElement('div');
+                texto.className = 'min-w-0';
+                const periodo = document.createElement('p');
+                periodo.className = 'text-[11px] font-bold text-violet-900';
+                periodo.textContent = `${inicio.toLocaleDateString('pt-BR')} até ${ultimoDia.toLocaleDateString('pt-BR')}`;
+                const detalhe = document.createElement('p');
+                detalhe.className = 'text-[10px] text-violet-700 mt-0.5';
+                detalhe.textContent = `${item.quantidade_dias} dia(s) · Retorno ${retorno.toLocaleDateString('pt-BR')}`;
+                texto.append(periodo, detalhe);
+
+                const excluir = document.createElement('button');
+                excluir.type = 'button';
+                excluir.className = 'shrink-0 text-[10px] font-semibold text-red-600 bg-white border border-red-100 px-2.5 py-2 rounded-lg';
+                excluir.textContent = 'Excluir';
+                excluir.addEventListener('click', () => excluirFerias(item.id));
+                card.append(texto, excluir);
+                lista.appendChild(card);
+            });
+        }
+
+        async function excluirFerias(id) {
+            mostrarConfirmacao('Excluir férias', 'Deseja realmente excluir esse período de férias?', async () => {
+                const { error } = await supabaseClient.from('ferias')
+                    .delete()
+                    .eq('id', id)
+                    .eq('user_id', currentUser.id);
+
+                if (error) {
+                    console.error(error);
+                    mostrarMensagem('Erro', 'Não foi possível excluir esse período.');
+                    return;
+                }
+                await carregarDadosCalendario();
+            });
+        }
+
+        function atualizarResumosCalendario() {
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+
+            const resumoFolga = document.getElementById('resumo-proxima-folga');
+            const resumoFerias = document.getElementById('resumo-proximas-ferias');
+
+            if (!configuracaoEscala) {
+                resumoFolga.textContent = 'Configure sua escala';
+            } else {
+                let proximaFolga = null;
+                for (let i = 0; i <= 8; i++) {
+                    const dia = adicionarDias(hoje, i);
+                    if (obterTipoDia(dia) === 'folga') {
+                        proximaFolga = dia;
+                        break;
+                    }
+                }
+                resumoFolga.textContent = proximaFolga
+                    ? (diferencaDias(proximaFolga, hoje) === 0 ? 'Hoje' : proximaFolga.toLocaleDateString('pt-BR'))
+                    : 'Não encontrada';
+            }
+
+            const futuras = feriasCadastradas
+                .filter(item => adicionarDias(dataDeISO(item.data_inicio), Number(item.quantidade_dias) - 1) >= hoje)
+                .sort((a, b) => a.data_inicio.localeCompare(b.data_inicio));
+
+            if (!futuras.length) {
+                resumoFerias.textContent = 'Nenhuma cadastrada';
+            } else {
+                resumoFerias.textContent = formatarDataBR(futuras[0].data_inicio);
+            }
+        }
+
+        async function verificarSessao() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                currentUser = session.user;
+                document.getElementById('auth-container').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                await carregarComprovantesSupabase();
+                await carregarDadosCalendario();
+            } else {
+                document.getElementById('auth-container').classList.remove('hidden');
+                document.getElementById('app-container').classList.add('hidden');
+            }
+        }
+
+        async function fazerLogout() {
+            await supabaseClient.auth.signOut();
+            window.location.reload();
+        }
+
+        async function excluirConta() {
+            mostrarConfirmacao('Excluir Conta', 'Tem certeza absoluta que deseja excluir sua conta e todos os dados salvos?', () => {
+                mostrarMensagem('Informação', 'Para sua segurança, a exclusão de conta está vinculada ao painel de configurações do Supabase.', 'ℹ️');
+            });
+        }
+
+        function calcularExpiracao(dataStr) {
+            const data = new Date(dataStr + 'T00:00:00');
+            let ano = data.getFullYear();
+            let mes = data.getMonth() + 1;
+
+            if (mes > 11) {
+                mes = 0;
+                ano++;
+            }
+            return new Date(ano, mes, 10);
+        }
+
+        function prepararArquivoParaCorte(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imgEl = document.getElementById('img-para-cortar');
+                imgEl.src = event.target.result;
+                document.getElementById('modal-corte').classList.remove('hidden');
+
+                if (cropper) {
+                    cropper.destroy();
+                }
+                cropper = new Cropper(imgEl, {
+                    aspectRatio: NaN,
+                    viewMode: 1,
+                    autoCropArea: 0.85,
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('input-camera').addEventListener('change', prepararArquivoParaCorte);
+        document.getElementById('input-galeria').addEventListener('change', prepararArquivoParaCorte);
+
+        function cancelarCorte() {
+            document.getElementById('modal-corte').classList.add('hidden');
+            document.getElementById('input-camera').value = '';
+            document.getElementById('input-galeria').value = '';
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+        }
+
+        function confirmarCorte() {
+            if (!cropper) return;
+
+            const canvas = cropper.getCroppedCanvas({
+                maxWidth: 1000,
+                maxHeight: 1000,
+            });
+
+            canvas.toBlob((blob) => {
+                blobFinalCortado = blob;
+                document.getElementById('modal-corte').classList.add('hidden');
+                if (cropper) {
+                    cropper.destroy();
+                    cropper = null;
+                }
+
+                document.getElementById('miniatura-preview').src = URL.createObjectURL(blob);
+                document.getElementById('secao-captura').classList.add('hidden');
+                document.getElementById('form-ponto').classList.remove('hidden');
+
+                const agora = new Date();
+                document.getElementById('data-ponto').valueAsDate = agora;
+                document.getElementById('hora-ponto').value = agora.toTimeString().substring(0, 5);
+
+                document.getElementById('input-camera').value = '';
+                document.getElementById('input-galeria').value = '';
+            }, 'image/jpeg', 0.8);
+        }
+
+        function cancelarEnvio() {
+            blobFinalCortado = null;
+            document.getElementById('form-ponto').classList.add('hidden');
+            document.getElementById('secao-captura').classList.remove('hidden');
+        }
+
+        document.getElementById('form-ponto').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (!blobFinalCortado) return;
+
+            const inputData = document.getElementById('data-ponto').value;
+            const inputHora = document.getElementById('hora-ponto').value;
+            const inputTipo = document.getElementById('tipo-ponto').value;
+
+            if (!inputData || !inputHora) {
+                mostrarMensagem('Atenção', 'Por favor, preencha a data e o horário impresso no comprovante.');
+                return;
+            }
+
+            const btnSalvar = document.getElementById('btn-salvar');
+            btnSalvar.innerText = 'Enviando para a nuvem...';
+            btnSalvar.disabled = true;
+
+            try {
+                const fileName = `${currentUser.id}/${Date.now()}.jpg`;
+
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                    .from('comprovantes')
+                    .upload(fileName, blobFinalCortado, {
+                        contentType: 'image/jpeg'
+                    });
+
+                if (uploadError) throw uploadError;
+
+                const { data: publicUrlData } = supabaseClient.storage
+                    .from('comprovantes')
+                    .getPublicUrl(fileName);
+
+                const imageUrl = publicUrlData.publicUrl;
+                const dataExpiracao = calcularExpiracao(inputData);
+
+                const { error: insertError } = await supabaseClient
+                    .from('pontos')
+                    .insert([
+                        {
+                            user_id: currentUser.id,
+                            data: inputData,
+                            hora: inputHora,
+                            tipo: inputTipo,
+                            expiracao: dataExpiracao.toISOString(),
+                            imagem_url: imageUrl
+                        }
+                    ]);
+
+                if (insertError) throw insertError;
+
+                await carregarComprovantesSupabase();
+                cancelarEnvio();
+                mostrarMensagem('Sucesso', 'Comprovante salvo com sucesso!', '✅');
+
+            } catch (erro) {
+                mostrarMensagem('Erro', 'Erro ao salvar comprovante na nuvem. Verifique sua conexão.', '❌');
+                console.error(erro);
+            } finally {
+                btnSalvar.innerText = 'Salvar na Nuvem';
+                btnSalvar.disabled = false;
+            }
+        });
+
+        async function carregarComprovantesSupabase() {
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+
+            const { data, error } = await supabaseClient
+                .from('pontos')
+                .select('*')
+                .eq('user_id', currentUser.id);
+
+            if (error) {
+                console.error('Erro ao carregar do Supabase:', error);
+                return;
+            }
+
+            comprovantes = data.filter(item => {
+                const expiracao = new Date(item.expiracao);
+                return expiracao >= hoje;
+            });
+
+            renderizar();
+        }
+
+        function renderizar() {
+            const listaEl = document.getElementById('lista-comprovantes');
+            const vazioEl = document.getElementById('vazio-state');
+            const totalEl = document.getElementById('total-comprovantes');
+            const filtroData = document.getElementById('filtro-data').value;
+            const btnLimpar = document.getElementById('btn-limpar-filtro');
+
+            if (filtroData) {
+                btnLimpar.classList.remove('hidden');
+            } else {
+                btnLimpar.classList.add('hidden');
+            }
+
+            let listaFiltrada = comprovantes;
+            if (filtroData) {
+                listaFiltrada = comprovantes.filter(item => item.data === filtroData);
+            }
+
+            listaEl.innerHTML = '';
+            totalEl.innerText = `${comprovantes.length} ${comprovantes.length === 1 ? 'ativo' : 'ativos'}`;
+
+            if (listaFiltrada.length === 0) {
+                vazioEl.classList.remove('hidden');
+                return;
+            }
+
+            vazioEl.classList.add('hidden');
+            listaFiltrada.sort((a, b) => new Date(b.data + 'T' + (b.hora || '00:00')) - new Date(a.data + 'T' + (a.hora || '00:00')));
+
+            listaFiltrada.forEach((item) => {
+                const dataFormatada = new Date(item.data + 'T00:00:00').toLocaleDateString('pt-BR');
+                const horaExibida = item.hora || '00:00';
+                const expFormatada = new Date(item.expiracao).toLocaleDateString('pt-BR');
+                const tipoBadgeColor = item.tipo === 'Entrada' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-rose-100 text-rose-800 border-rose-200';
+
+                const card = document.createElement('div');
+                card.className = 'bg-white/95 backdrop-blur-sm rounded-2xl p-3 shadow-md border border-white/20 flex items-center justify-between gap-3';
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3 cursor-pointer flex-grow" onclick="abrirModal('${item.imagem_url}', '${dataFormatada} às ${horaExibida} (${item.tipo})', '${expFormatada}')">
+                        <img src="${item.imagem_url}" class="w-14 h-14 object-cover rounded-xl border border-slate-200 flex-shrink-0 shadow-sm" alt="Miniatura ponto">
+                        <div>
+                            <div class="flex items-center gap-2 mb-0.5">
+                                <span class="text-xs font-bold text-slate-800">${dataFormatada} - ${horaExibida}</span>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${tipoBadgeColor}">${item.tipo}</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500">Expira em: ${expFormatada}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="abrirModal('${item.imagem_url}', '${dataFormatada} às ${horaExibida} (${item.tipo})', '${expFormatada}')" class="p-2 text-slate-400 hover:text-blue-700 rounded-lg transition" title="Ver imagem">
+                            🔍
+                        </button>
+                        <button onclick="excluirItem(${item.id})" class="p-2 text-slate-400 hover:text-red-500 rounded-lg transition" title="Excluir">
+                            🗑️
+                        </button>
+                    </div>
+                `;
+                listaEl.appendChild(card);
+            });
+        }
+
+        document.getElementById('filtro-data').addEventListener('input', renderizar);
+
+        function limparFiltro() {
+            document.getElementById('filtro-data').value = '';
+            renderizar();
+        }
+
+        async function excluirItem(id) {
+            mostrarConfirmacao('Excluir Comprovante', 'Deseja realmente excluir este comprovante?', async () => {
+                const { error } = await supabaseClient
+                    .from('pontos')
+                    .delete()
+                    .eq('id', id)
+                    .eq('user_id', currentUser.id);
+
+                if (error) {
+                    mostrarMensagem('Erro', 'Erro ao excluir o registro.');
+                    return;
+                }
+
+                await carregarComprovantesSupabase();
+            });
+        }
+
+        function abrirModal(src, info, exp) {
+            document.getElementById('img-modal').src = src;
+            document.getElementById('modal-info').innerText = `${info} | Válido até: ${exp}`;
+            document.getElementById('modal-imagem').classList.remove('hidden');
+        }
+
+        function fecharModal() {
+            document.getElementById('modal-imagem').classList.add('hidden');
+        }
+
+        verificarSessao();
+    </script>
+</body>
+</html>base/supabase-js@2"></script>
     <!-- Cropper.js (Ferramenta de corte de imagem) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
