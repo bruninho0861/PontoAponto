@@ -8,6 +8,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Cropper.js (Ferramenta de corte de imagem) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
         body {
             background-color: #1e3a8a;
@@ -107,7 +110,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Foto do Papelzinho</label>
                         <input type="file" id="foto-ponto" accept="image/*" capture="environment" required
                                class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-800 hover:file:bg-blue-100 cursor-pointer">
-                        <p class="text-[10px] text-slate-400 mt-1">Insira a foto e os dados exatos impressos no comprovante.</p>
+                        <p class="text-[10px] text-slate-400 mt-1">Insira a foto. Poderá recortar e ajustar o comprovante a seguir.</p>
                     </div>
 
                     <button type="submit" id="btn-salvar"
@@ -149,7 +152,23 @@
         </main>
     </div>
 
-    <!-- Modal de Visualização -->
+    <!-- MODAL DE CORTE DE IMAGEM -->
+    <div id="modal-corte" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col items-center justify-between p-4">
+        <div class="text-white text-xs font-semibold py-2">Ajuste o recorte no comprovante</div>
+        <div class="w-full max-w-md flex-grow flex items-center justify-center overflow-hidden my-2">
+            <img id="img-para-cortar" class="max-h-[70vh] block max-w-full" src="" alt="Cortar imagem">
+        </div>
+        <div class="w-full max-w-md flex gap-3 pb-2">
+            <button type="button" onclick="cancelarCorte()" class="w-1/2 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl text-sm transition">
+                Cancelar
+            </button>
+            <button type="button" onclick="confirmarCorte()" class="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-sm transition">
+                Confirmar Corte
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Visualização Ampliada -->
     <div id="modal-imagem" class="fixed inset-0 bg-black/90 z-50 hidden flex flex-col items-center justify-center p-4">
         <button onclick="fecharModal()" class="absolute top-4 right-4 text-white text-3xl font-light bg-white/10 w-10 h-10 rounded-full flex items-center justify-center">×</button>
         <img id="img-modal" class="max-w-full max-h-[80vh] rounded-xl object-contain mb-4 border border-white/10" src="" alt="Comprovante ampliado">
@@ -165,8 +184,9 @@
         let isCadastrando = false;
         let currentUser = null;
         let comprovantes = [];
+        let cropper = null;
+        let arquivoOriginal = null;
 
-        // Preenche com a data e hora atual como sugestão inicial ao abrir
         const agora = new Date();
         document.getElementById('data-ponto').valueAsDate = agora;
         document.getElementById('hora-ponto').value = agora.toTimeString().substring(0, 5);
@@ -293,37 +313,57 @@
             return new Date(ano, mes, 10);
         }
 
-        function comprimirImagem(file, maxWidth = 1000, quality = 0.75) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
+        // INTERCEPTA O ARQUIVO SELECIONADO PARA ABRIR O MODAL DE CORTE
+        document.getElementById('foto-ponto').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
 
-                        if (width > maxWidth) {
-                            height = Math.round((height * maxWidth) / width);
-                            width = maxWidth;
-                        }
+            arquivoOriginal = file;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imgEl = document.getElementById('img-para-cortar');
+                imgEl.src = event.target.result;
+                document.getElementById('modal-corte').classList.remove('hidden');
 
-                        canvas.width = width;
-                        canvas.height = height;
+                if (cropper) {
+                    cropper.destroy();
+                }
+                cropper = new Cropper(imgEl, {
+                    aspectRatio: NaN, // Livre para ajustar o quadrado do papelzinho
+                    viewMode: 1,
+                    autoCropArea: 0.8,
+                });
+            };
+            reader.readAsDataURL(file);
+        });
 
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        canvas.toBlob((blob) => {
-                            resolve(blob);
-                        }, 'image/jpeg', quality);
-                    };
-                    img.onerror = reject;
-                    img.src = event.target.result;
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
+        function cancelarCorte() {
+            document.getElementById('modal-corte').classList.add('hidden');
+            document.getElementById('foto-ponto').value = '';
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+        }
+
+        function confirmarCorte() {
+            if (!cropper) return;
+
+            const canvas = cropper.getCroppedCanvas({
+                maxWidth: 1000,
+                maxHeight: 1000,
             });
+
+            canvas.toBlob(async (blob) => {
+                document.getElementById('modal-corte').classList.add('hidden');
+                if (cropper) {
+                    cropper.destroy();
+                    cropper = null;
+                }
+
+                // Prossegue com o envio do blob cortado para o Supabase
+                await enviarComprovanteParaNuvem(blob);
+            }, 'image/jpeg', 0.8);
         }
 
         async function carregarComprovantesSupabase() {
@@ -417,21 +457,29 @@
             renderizar();
         }
 
-        document.getElementById('form-ponto').addEventListener('submit', async function(e) {
+        // Disparado ao submeter o form, após o corte ter sido feito
+        document.getElementById('form-ponto').addEventListener('submit', function(e) {
             e.preventDefault();
+            const inputFile = document.getElementById('foto-ponto').files[0];
+            if (!inputFile) {
+                alert('Por favor, selecione uma foto do comprovante.');
+                return;
+            }
+            // O fluxo de envio é acionado pelo botão "Confirmar Corte" no modal.
+        });
+
+        async function enviarComprovanteParaNuvem(imagemBlob) {
             const inputData = document.getElementById('data-ponto').value;
             const inputHora = document.getElementById('hora-ponto').value;
             const inputTipo = document.getElementById('tipo-ponto').value;
-            const inputFile = document.getElementById('foto-ponto').files[0];
 
-            if (!inputFile || !inputData || !inputHora) return;
+            if (!inputData || !inputHora) return;
 
             const btnSalvar = document.getElementById('btn-salvar');
             btnSalvar.innerText = 'Enviando para a nuvem...';
             btnSalvar.disabled = true;
 
             try {
-                const imagemBlob = await comprimirImagem(inputFile);
                 const fileName = `${currentUser.id}/${Date.now()}.jpg`;
 
                 const { data: uploadData, error: uploadError } = await supabaseClient.storage
@@ -473,7 +521,7 @@
                 btnSalvar.innerText = 'Salvar Comprovante';
                 btnSalvar.disabled = false;
             }
-        });
+        }
 
         async function excluirItem(id) {
             if (confirm('Deseja realmente excluir este comprovante?')) {
