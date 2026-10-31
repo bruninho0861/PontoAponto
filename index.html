@@ -83,25 +83,31 @@
                 <form id="form-ponto" class="space-y-4">
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Data</label>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Data do Ponto</label>
                             <input type="date" id="data-ponto" required 
                                    class="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Ponto</label>
-                            <select id="tipo-ponto" required
-                                    class="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
-                                <option value="Entrada">🟢 Entrada</option>
-                                <option value="Saída">🔴 Saída</option>
-                            </select>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Horário Impresso</label>
+                            <input type="time" id="hora-ponto" required 
+                                   class="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
                         </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Ponto</label>
+                        <select id="tipo-ponto" required
+                                class="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 bg-slate-50 font-medium">
+                            <option value="Entrada">🟢 Entrada</option>
+                            <option value="Saída">🔴 Saída</option>
+                        </select>
                     </div>
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Foto do Papelzinho</label>
                         <input type="file" id="foto-ponto" accept="image/*" capture="environment" required
                                class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-800 hover:file:bg-blue-100 cursor-pointer">
-                        <p class="text-[10px] text-slate-400 mt-1">A imagem será enviada de forma segura para a nuvem.</p>
+                        <p class="text-[10px] text-slate-400 mt-1">Insira a foto e os dados exatos impressos no comprovante.</p>
                     </div>
 
                     <button type="submit" id="btn-salvar"
@@ -151,7 +157,6 @@
     </div>
 
     <script>
-        // CONFIGURAÇÃO DO SUPABASE
         const SUPABASE_URL = 'https://xxgcoovcgwojsbfupwkr.supabase.co';
         const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_ht0B99TeSvoxZn46W21C5w_4E-hQxKt';
         
@@ -161,7 +166,10 @@
         let currentUser = null;
         let comprovantes = [];
 
-        document.getElementById('data-ponto').valueAsDate = new Date();
+        // Preenche com a data e hora atual como sugestão inicial ao abrir
+        const agora = new Date();
+        document.getElementById('data-ponto').valueAsDate = agora;
+        document.getElementById('hora-ponto').value = agora.toTimeString().substring(0, 5);
 
         function alternarModoAuth() {
             isCadastrando = !isCadastrando;
@@ -233,7 +241,7 @@
                 if (error) {
                     mostrarErroAuth(error.message);
                 } else {
-                    mostrarSucessoAuth('Cadastro realizado! Um e-mail de confirmação foi enviado para sua caixa de entrada.');
+                    mostrarSucessoAuth('Cadastro realizado! Um e-mail de confirmação foi enviado.');
                 }
             } else {
                 const { data, error } = await supabaseClient.auth.signInWithPassword({
@@ -285,7 +293,6 @@
             return new Date(ano, mes, 10);
         }
 
-        // COMPRESSÃO DE IMAGEM ANTES DE ENVIAR AO STORAGE
         function comprimirImagem(file, maxWidth = 1000, quality = 0.75) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -319,12 +326,10 @@
             });
         }
 
-        // CARREGAR COMPROVANTES DO SUPABASE (Nuvem)
         async function carregarComprovantesSupabase() {
             const hoje = new Date();
             hoje.setHours(0, 0, 0, 0);
 
-            // Busca apenas os dados do usuário atual na tabela do Supabase
             const { data, error } = await supabaseClient
                 .from('pontos')
                 .select('*')
@@ -335,7 +340,6 @@
                 return;
             }
 
-            // Filtra e remove os expirados automaticamente da listagem
             comprovantes = data.filter(item => {
                 const expiracao = new Date(item.expiracao);
                 return expiracao >= hoje;
@@ -371,10 +375,11 @@
             }
 
             vazioEl.classList.add('hidden');
-            listaFiltrada.sort((a, b) => new Date(b.data) - new Date(a.data));
+            listaFiltrada.sort((a, b) => new Date(b.data + 'T' + (b.hora || '00:00')) - new Date(a.data + 'T' + (a.hora || '00:00')));
 
             listaFiltrada.forEach((item) => {
                 const dataFormatada = new Date(item.data + 'T00:00:00').toLocaleDateString('pt-BR');
+                const horaExibida = item.hora || '00:00';
                 const expFormatada = new Date(item.expiracao).toLocaleDateString('pt-BR');
                 const tipoBadgeColor = item.tipo === 'Entrada' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-rose-100 text-rose-800 border-rose-200';
 
@@ -382,18 +387,18 @@
                 card.className = 'bg-white/95 backdrop-blur-sm rounded-2xl p-3 shadow-md border border-white/20 flex items-center justify-between gap-3';
 
                 card.innerHTML = `
-                    <div class="flex items-center gap-3 cursor-pointer flex-grow" onclick="abrirModal('${item.imagem_url}', '${dataFormatada} (${item.tipo})', '${expFormatada}')">
+                    <div class="flex items-center gap-3 cursor-pointer flex-grow" onclick="abrirModal('${item.imagem_url}', '${dataFormatada} às ${horaExibida} (${item.tipo})', '${expFormatada}')">
                         <img src="${item.imagem_url}" class="w-14 h-14 object-cover rounded-xl border border-slate-200 flex-shrink-0 shadow-sm" alt="Miniatura ponto">
                         <div>
                             <div class="flex items-center gap-2 mb-0.5">
-                                <span class="text-xs font-bold text-slate-800">${dataFormatada}</span>
+                                <span class="text-xs font-bold text-slate-800">${dataFormatada} - ${horaExibida}</span>
                                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${tipoBadgeColor}">${item.tipo}</span>
                             </div>
                             <p class="text-[11px] text-slate-500">Expira em: ${expFormatada}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-1">
-                        <button onclick="abrirModal('${item.imagem_url}', '${dataFormatada} (${item.tipo})', '${expFormatada}')" class="p-2 text-slate-400 hover:text-blue-700 rounded-lg transition" title="Ver imagem">
+                        <button onclick="abrirModal('${item.imagem_url}', '${dataFormatada} às ${horaExibida} (${item.tipo})', '${expFormatada}')" class="p-2 text-slate-400 hover:text-blue-700 rounded-lg transition" title="Ver imagem">
                             🔍
                         </button>
                         <button onclick="excluirItem(${item.id})" class="p-2 text-slate-400 hover:text-red-500 rounded-lg transition" title="Excluir">
@@ -412,27 +417,23 @@
             renderizar();
         }
 
-        // SALVAR COMPROVANTE NO STORAGE E NO BANCO DO SUPABASE
         document.getElementById('form-ponto').addEventListener('submit', async function(e) {
             e.preventDefault();
             const inputData = document.getElementById('data-ponto').value;
+            const inputHora = document.getElementById('hora-ponto').value;
             const inputTipo = document.getElementById('tipo-ponto').value;
             const inputFile = document.getElementById('foto-ponto').files[0];
 
-            if (!inputFile || !inputData) return;
+            if (!inputFile || !inputData || !inputHora) return;
 
             const btnSalvar = document.getElementById('btn-salvar');
             btnSalvar.innerText = 'Enviando para a nuvem...';
             btnSalvar.disabled = true;
 
             try {
-                // 1. Compacta a imagem
                 const imagemBlob = await comprimirImagem(inputFile);
-                
-                // 2. Define o caminho do arquivo no Storage (separado por usuário)
                 const fileName = `${currentUser.id}/${Date.now()}.jpg`;
 
-                // 3. Faz o upload para o Bucket "comprovantes"
                 const { data: uploadData, error: uploadError } = await supabaseClient.storage
                     .from('comprovantes')
                     .upload(fileName, imagemBlob, {
@@ -441,7 +442,6 @@
 
                 if (uploadError) throw uploadError;
 
-                // 4. Pega a URL pública da imagem recém enviada
                 const { data: publicUrlData } = supabaseClient.storage
                     .from('comprovantes')
                     .getPublicUrl(fileName);
@@ -449,13 +449,13 @@
                 const imageUrl = publicUrlData.publicUrl;
                 const dataExpiracao = calcularExpiracao(inputData);
 
-                // 5. Salva os dados na tabela "pontos" do banco
                 const { error: insertError } = await supabaseClient
                     .from('pontos')
                     .insert([
                         {
                             user_id: currentUser.id,
                             data: inputData,
+                            hora: inputHora,
                             tipo: inputTipo,
                             expiracao: dataExpiracao.toISOString(),
                             imagem_url: imageUrl
@@ -464,9 +464,7 @@
 
                 if (insertError) throw insertError;
 
-                // Recarrega os dados atualizados da nuvem
                 await carregarComprovantesSupabase();
-
                 document.getElementById('foto-ponto').value = '';
             } catch (erro) {
                 alert('Erro ao salvar comprovante na nuvem. Verifique sua conexão.');
