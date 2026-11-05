@@ -846,7 +846,6 @@
             botao.innerText = 'Salvando...';
 
             try {
-                // Tenta atualizar ou inserir flexibilizando colunas antigas da tabela (caso existam data_referencia na tabela)
                 let payload = {
                     user_id: currentUser.id,
                     tipo_escala: tipoEscala,
@@ -856,7 +855,6 @@
                 let { error } = await supabaseClient.from('escala_config').upsert(payload, { onConflict: 'user_id' });
 
                 if (error) {
-                    // Fallback se a tabela exigir colunas antigas que o usuário possuía no banco
                     payload.data_referencia = dataLocalISO(new Date());
                     payload.tipo_referencia = 'trabalho';
                     let res2 = await supabaseClient.from('escala_config').upsert(payload, { onConflict: 'user_id' });
@@ -1081,7 +1079,6 @@
                 const metadata = currentUser.user_metadata || {};
                 const nome = metadata.nome || 'Usuário';
                 const genero = metadata.genero || 'masculino';
-                
                 const idiomaSalvo = metadata.idioma || localStorage.getItem('idioma_preferido') || 'pt';
 
                 const sidebarNome = document.getElementById('sidebar-nome');
@@ -1380,8 +1377,6 @@
 
             vazioEl.classList.add('hidden');
             listaFiltrada.sort((a, b) => new Date(b.data + 'T' + (b.hora || '00:00')) - new Date(a.data + 'T' + (a.hora || '00:00')));
-
-            listaFiltrada.reloadList = true;
 
             listaFiltrada.forEach((item) => {
                 const dataFormatada = new Date(item.data + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'pt-BR');
