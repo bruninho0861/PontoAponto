@@ -852,23 +852,25 @@
                     updated_at: new Date().toISOString()
                 };
 
-                let { error } = await supabaseClient.from('escala_config').upsert(payload, { onConflict: 'user_id' });
+                let { error } = await supabaseClient
+                    .from('escala_config')
+                    .upsert(payload, { onConflict: 'user_id' });
 
-                if (error) {
-                    payload.data_referencia = dataLocalISO(new Date());
-                    payload.tipo_referencia = 'trabalho';
-                    let res2 = await supabaseClient.from('escala_config').upsert(payload, { onConflict: 'user_id' });
-                    if (res2.error) throw res2.error;
-                }
+                if (error) throw error;
 
                 configuracaoEscala = { tipo_escala: tipoEscala };
                 fecharConfiguracaoEscala();
                 renderizarCalendario();
+                
                 const lang = localStorage.getItem('idioma_preferido') || 'pt';
-                mostrarMensagem(lang === 'en' ? 'Schedule saved' : 'Escala salva', lang === 'en' ? 'Your schedule was successfully saved.' : 'Sua escala semanal foi salva na nuvem com sucesso.', '✅');
+                mostrarMensagem(
+                    lang === 'en' ? 'Schedule saved' : 'Escala salva', 
+                    lang === 'en' ? 'Your schedule was successfully saved.' : 'Sua escala semanal foi salva na nuvem com sucesso.', 
+                    '✅'
+                );
             } catch (erro) {
                 console.error(erro);
-                mostrarMensagem('Erro', 'Não foi possível salvar sua escala no Supabase.', '❌');
+                mostrarMensagem('Erro', 'Não foi possível salvar sua escala no Supabase. Certifique-se de que a restrição unique (user_id) foi aplicada na tabela escala_config.', '❌');
             } finally {
                 botao.disabled = false;
                 botao.innerText = 'Salvar escala';
