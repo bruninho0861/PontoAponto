@@ -162,7 +162,7 @@
                 <a href="#comprovantes-area" class="nav-ponto"><span>▥</span> <span data-translate="menuComprovantes">Comprovantes</span></a>
                 <div class="border-t border-white/10 my-4"></div>
                 <a href="#calendario-ponto" class="nav-ponto"><span>⚙</span> <span data-translate="menuEscala">Minha escala</span></a>
-                <button type="button" onclick="abrirConfiguracaoEscala()" class="nav-ponto"><span>☷</span> <span data-translate="menuConfig">Configurar Folga</span></button>
+                <button type="button" onclick="abrirConfiguracaoEscala()" class="nav-ponto"><span>☷</span> <span data-translate="menuConfig">Configurar Escala</span></button>
                 <button type="button" onclick="fazerLogout()" class="nav-ponto"><span>⇥</span> <span data-translate="menuSair">Sair</span></button>
             </nav>
             <div class="sidebar-decoration"><span>✓</span></div>
@@ -227,13 +227,13 @@
                     </form>
                 </div>
 
-                <!-- CALENDÁRIO 6x2 E CONTROLE DE FÉRIAS -->
+                <!-- CALENDÁRIO FIXO E CONTROLE DE FÉRIAS -->
                 <section id="calendario-ponto" class="bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl border border-white/50 p-5 md:p-7 mb-7">
                     <div class="flex items-center justify-between mb-5 gap-3">
                         <div><h2 class="text-lg md:text-xl font-extrabold text-blue-950" data-translate="escalaTitulo">📅 Minha escala</h2></div>
                     </div>
 
-                    <div id="aviso-config-escala" class="hidden rounded-xl bg-amber-50 border border-amber-200 p-3 mb-4 text-xs text-amber-800" data-translate="avisoEscala">Para começar, configure uma data de referência e informe se ela é o primeiro dia de trabalho ou o primeiro dia de folga.</div>
+                    <div id="aviso-config-escala" class="hidden rounded-xl bg-amber-50 border border-amber-200 p-3 mb-4 text-xs text-amber-800" data-translate="avisoEscala">Para começar, selecione qual é a sua escala semanal abaixo.</div>
                     
                     <div class="flex items-center justify-between mb-4">
                         <button type="button" onclick="mudarMesCalendario(-1)" class="w-10 h-10 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-800 text-2xl font-bold">‹</button>
@@ -257,7 +257,7 @@
                                 <span>🏖️</span> <span data-translate="btnCadastrarFerias">Cadastrar Férias</span>
                             </button>
                             <button type="button" onclick="abrirConfiguracaoEscala()" class="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-3 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
-                                <span>⚙️</span> <span data-translate="btnConfigurarFolga">Configurar Folga</span>
+                                <span>⚙️</span> <span data-translate="btnConfigurarFolga">Selecionar Escala</span>
                             </button>
                         </div>
 
@@ -279,12 +279,22 @@
                 <!-- MODAL DE CONFIGURAÇÃO DA ESCALA -->
                 <div id="modal-config-escala" class="hidden fixed inset-0 z-40 bg-black/70 p-4 flex items-center justify-center">
                     <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-2xl">
-                        <h3 class="text-base font-bold text-blue-900 mb-1" data-translate="modalConfigTitulo">Configurar escala 6x2</h3>
-                        <p class="text-xs text-slate-500 mb-4" data-translate="modalConfigSub">Escolha uma data que você saiba identificar na sua escala. A partir dela, o calendário calcula os ciclos de 6 dias de trabalho e 2 de folga.</p>
+                        <h3 class="text-base font-bold text-blue-900 mb-1" data-translate="modalConfigTitulo">Selecionar sua escala</h3>
+                        <p class="text-xs text-slate-500 mb-4" data-translate="modalConfigSub">Escolha qual é a sua escala de folga semanal:</p>
                         <form id="form-config-escala" class="space-y-3">
-                            <div><label for="escala-data-referencia" class="block text-xs font-semibold text-slate-600 mb-1" data-translate="labelDataRef">Data de referência</label><input id="escala-data-referencia" type="date" required class="w-full rounded-xl border border-slate-300 p-3 text-sm bg-slate-50"></div>
-                            <div><label for="escala-tipo-referencia" class="block text-xs font-semibold text-slate-600 mb-1" data-translate="labelNessaData">Nessa data você estava...</label><select id="escala-tipo-referencia" required class="w-full rounded-xl border border-slate-300 p-3 text-sm bg-slate-50"><option value="trabalho" data-translate="opcaoTrabalho">No 1º dia de trabalho (início dos 6 dias)</option><option value="folga" data-translate="opcaoFolga">No 1º dia de folga (início dos 2 dias)</option></select></div>
-                            <div class="flex gap-2 pt-1"><button type="button" onclick="fecharConfiguracaoEscala()" class="w-1/2 bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl text-xs" data-translate="btnCancelar">Cancelar</button><button type="submit" id="btn-salvar-escala" class="w-1/2 bg-blue-800 text-white font-semibold py-3 rounded-xl text-xs" data-translate="btnSalvarEscala">Salvar escala</button></div>
+                            <div>
+                                <label for="escala-tipo-selecionada" class="block text-xs font-semibold text-slate-600 mb-1">Escala Semanal</label>
+                                <select id="escala-tipo-selecionada" required class="w-full rounded-xl border border-slate-300 p-3 text-sm bg-slate-50 font-medium">
+                                    <option value="A">Escala A (Folga: Sexta e Sábado)</option>
+                                    <option value="B">Escala B (Folga: Quinta e Sexta)</option>
+                                    <option value="C">Escala C (Folga: Terça e Quarta)</option>
+                                    <option value="D">Escala D (Folga: Domingo e Segunda)</option>
+                                </select>
+                            </div>
+                            <div class="flex gap-2 pt-1">
+                                <button type="button" onclick="fecharConfiguracaoEscala()" class="w-1/2 bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl text-xs" data-translate="btnCancelar">Cancelar</button>
+                                <button type="submit" id="btn-salvar-escala" class="w-1/2 bg-blue-800 text-white font-semibold py-3 rounded-xl text-xs" data-translate="btnSalvarEscala">Salvar escala</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -292,7 +302,7 @@
                 <!-- SEÇÃO DE COMPROVANTES VIGENTES -->
                 <div id="comprovantes-area" class="mb-8">
                     <div class="flex items-center justify-between mb-3 px-1 gap-2">
-                        <button type="button" onclick="toggleSecaoComprovantes()" class="flex items-center gap-2 text-sm uppercase tracking-wider font-extrabold text-white hover:text-blue-100 transition"><span id="icone-seta">▼</span> <span data-translate="tituloComprovantes">Comprovantes Vigentes</span> <span class="text-[10px] font-normal text-blue-200 normal-case" data-translate="subComprovantes">(Expiram após dia 10)</span></button>
+                        <button type="button" onclick="toggleSecaoComprovantes()" class="flex items-center gap-2 text-sm uppercase tracking-wider font-extrabold text-white hover:text-blue-100 transition"><span id="icone-seta">▼</span> <span data-translate="tituloComprovantes">Comprovantes Vigentes</span> <span class="text-[10px] font-normal text-blue-200 normal-case" data-translate="subComprovantes">(Expiram após dia 12)</span></button>
                         <button type="button" onclick="toggleSecaoComprovantes()" id="btn-toggle-texto" class="text-xs font-bold bg-blue-800/80 hover:bg-blue-800 text-white px-3 py-2 rounded-lg border border-blue-500/50 transition" data-translate="btnOcultar">Ocultar</button>
                     </div>
                     <div id="container-comprovantes" class="space-y-3 transition-all duration-300">
@@ -397,7 +407,7 @@
                 btnGaleria: "Da Galeria",
                 menuComprovantes: "Comprovantes",
                 menuEscala: "Minha escala",
-                menuConfig: "Configurar Folga",
+                menuConfig: "Configurar Escala",
                 menuSair: "Sair",
                 bannerUpload: "Adicione aqui seu comprovante ou tire a foto do seu comprovante",
                 labelCapturar: "1. Capturar Comprovante",
@@ -412,23 +422,19 @@
                 btnCancelar: "Cancelar",
                 btnSalvar: "Salvar na Nuvem",
                 escalaTitulo: "📅 Minha escala",
-                avisoEscala: "Para começar, configure uma data de referência e informe se ela é o primeiro dia de trabalho ou o primeiro dia de folga.",
+                avisoEscala: "Para começar, selecione qual é a sua escala semanal abaixo.",
                 dom: "Dom", seg: "Seg", ter: "Ter", qua: "Qua", qui: "Qui", sex: "Sex", sab: "Sáb",
                 legTrabalho: "Trabalho", legFolga: "Folga", legFerias: "Férias", legRetorno: "Retorno",
                 btnCadastrarFerias: "Cadastrar Férias",
-                btnConfigurarFolga: "Configurar Folga",
+                btnConfigurarFolga: "Selecionar Escala",
                 labelPrimeiroDia: "Primeiro dia",
                 labelQtdDias: "Quantidade de dias",
                 previewFeriasTexto: "Informe a data inicial e a quantidade de dias para calcular o retorno.",
                 btnSalvarFerias: "Salvar férias",
                 subFeriasCadastradas: "Férias cadastradas",
                 carregando: "Carregando...",
-                modalConfigTitulo: "Configurar escala 6x2",
-                modalConfigSub: "Escolha uma data que você saiba identificar na sua escala. A partir dela, o calendário calcula os ciclos de 6 dias de trabalho e 2 de folga.",
-                labelDataRef: "Data de referência",
-                labelNessaData: "Nessa data você estava...",
-                opcaoTrabalho: "No 1º dia de trabalho (início dos 6 dias)",
-                opcaoFolga: "No 1º dia de folga (início dos 2 dias)",
+                modalConfigTitulo: "Selecionar sua escala",
+                modalConfigSub: "Escolha qual é a sua escala de folga semanal:",
                 btnSalvarEscala: "Salvar escala",
                 tituloComprovantes: "Comprovantes Vigentes",
                 subComprovantes: "(Expiram após dia 12)",
@@ -449,7 +455,7 @@
                 btnGaleria: "From Gallery",
                 menuComprovantes: "Receipts",
                 menuEscala: "My Schedule",
-                menuConfig: "Configure Day Off",
+                menuConfig: "Configure Schedule",
                 menuSair: "Logout",
                 bannerUpload: "Add your timecard receipt here or take a photo",
                 labelCapturar: "1. Capture Receipt",
@@ -464,23 +470,19 @@
                 btnCancelar: "Cancel",
                 btnSalvar: "Save to Cloud",
                 escalaTitulo: "📅 My Schedule",
-                avisoEscala: "To start, set a reference date and specify whether it is the first day of work or day off.",
+                avisoEscala: "To start, select your weekly schedule below.",
                 dom: "Sun", seg: "Mon", ter: "Tue", qua: "Wed", qui: "Thu", sex: "Fri", sab: "Sat",
                 legTrabalho: "Work", legFolga: "Day Off", legFerias: "Vacation", legRetorno: "Return",
                 btnCadastrarFerias: "Register Vacation",
-                btnConfigurarFolga: "Configure Day Off",
+                btnConfigurarFolga: "Select Schedule",
                 labelPrimeiroDia: "First day",
                 labelQtdDias: "Number of days",
                 previewFeriasTexto: "Enter the start date and number of days to calculate return.",
                 btnSalvarFerias: "Save Vacation",
                 subFeriasCadastradas: "Registered Vacations",
                 carregando: "Loading...",
-                modalConfigTitulo: "Configure 6x2 Schedule",
-                modalConfigSub: "Choose a known date in your schedule. From it, the calendar calculates 6 work days and 2 off days.",
-                labelDataRef: "Reference date",
-                labelNessaData: "On this date you were...",
-                opcaoTrabalho: "On 1st work day (start of 6 days)",
-                opcaoFolga: "On 1st day off (start of 2 days)",
+                modalConfigTitulo: "Select your schedule",
+                modalConfigSub: "Choose your weekly day-off schedule:",
                 btnSalvarEscala: "Save Schedule",
                 tituloComprovantes: "Active Receipts",
                 subComprovantes: "(Expire after the 12th)",
@@ -705,7 +707,7 @@
         });
 
         // ============================================================
-        // CALENDÁRIO 6x2 E CONTROLE DE FÉRIAS
+        // CALENDÁRIO FIXO POR ESCALA (A, B, C, D) E CONTROLE DE FÉRIAS
         // ============================================================
         let configuracaoEscala = null;
         let feriasCadastradas = [];
@@ -729,21 +731,21 @@
             return nova;
         }
 
-        function diferencaDias(dataA, dataB) {
-            const utcA = Date.UTC(dataA.getFullYear(), dataA.getMonth(), dataA.getDate());
-            const utcB = Date.UTC(dataB.getFullYear(), dataB.getMonth(), dataB.getDate());
-            return Math.round((utcA - utcB) / 86400000);
-        }
-
         function obterTipoEscalaPura(data) {
-            if (!configuracaoEscala) return 'trabalho';
-            const referencia = dataDeISO(configuracaoEscala.data_referencia);
-            let ciclo = ((diferencaDias(data, referencia) % 8) + 8) % 8;
+            if (!configuracaoEscala || !configuracaoEscala.tipo_escala) return 'trabalho';
+            const diaSemana = data.getDay(); // 0: Dom, 1: Seg, 2: Ter, 3: Qua, 4: Qui, 5: Sex, 6: Sáb
+            const escala = configuracaoEscala.tipo_escala;
 
-            if (configuracaoEscala.tipo_referencia === 'folga') {
-                return ciclo < 2 ? 'folga' : 'trabalho';
-            }
-            return ciclo < 6 ? 'trabalho' : 'folga';
+            // Escala A: Folga Sexta (5) e Sábado (6)
+            if (escala === 'A' && (diaSemana === 5 || diaSemana === 6)) return 'folga';
+            // Escala B: Folga Quinta (4) e Sexta (5)
+            if (escala === 'B' && (diaSemana === 4 || diaSemana === 5)) return 'folga';
+            // Escala C: Folga Terça (2) e Quarta (3)
+            if (escala === 'C' && (diaSemana === 2 || diaSemana === 3)) return 'folga';
+            // Escala D: Folga Domingo (0) e Segunda (1)
+            if (escala === 'D' && (diaSemana === 0 || diaSemana === 1)) return 'folga';
+
+            return 'trabalho';
         }
 
         function calcularRetornoReal(dataInicio, quantidadeDias) {
@@ -782,7 +784,7 @@
                 if (iso === dataLocalISO(retorno)) return 'retorno';
             }
 
-            if (!configuracaoEscala) return 'sem-configuracao';
+            if (!configuracaoEscala || !configuracaoEscala.tipo_escala) return 'sem-configuracao';
             return obterTipoEscalaPura(data);
         }
 
@@ -792,7 +794,7 @@
             try {
                 const [escalaResult, feriasResult] = await Promise.all([
                     supabaseClient.from('escala_config')
-                        .select('data_referencia,tipo_referencia')
+                        .select('tipo_escala')
                         .eq('user_id', currentUser.id)
                         .maybeSingle(),
                     supabaseClient.from('ferias')
@@ -822,12 +824,10 @@
         }
 
         function abrirConfiguracaoEscala() {
-            if (configuracaoEscala) {
-                document.getElementById('escala-data-referencia').value = configuracaoEscala.data_referencia;
-                document.getElementById('escala-tipo-referencia').value = configuracaoEscala.tipo_referencia;
+            if (configuracaoEscala && configuracaoEscala.tipo_escala) {
+                document.getElementById('escala-tipo-selecionada').value = configuracaoEscala.tipo_escala;
             } else {
-                document.getElementById('escala-data-referencia').value = dataLocalISO(new Date());
-                document.getElementById('escala-tipo-referencia').value = 'trabalho';
+                document.getElementById('escala-tipo-selecionada').value = 'A';
             }
             document.getElementById('modal-config-escala').classList.remove('hidden');
         }
@@ -840,27 +840,34 @@
             e.preventDefault();
             if (!currentUser) return;
 
-            const dataReferencia = document.getElementById('escala-data-referencia').value;
-            const tipoReferencia = document.getElementById('escala-tipo-referencia').value;
+            const tipoEscala = document.getElementById('escala-tipo-selecionada').value;
             const botao = document.getElementById('btn-salvar-escala');
             botao.disabled = true;
             botao.innerText = 'Salvando...';
 
             try {
-                const { error } = await supabaseClient.from('escala_config').upsert({
+                // Tenta atualizar ou inserir flexibilizando colunas antigas da tabela (caso existam data_referencia na tabela)
+                let payload = {
                     user_id: currentUser.id,
-                    data_referencia: dataReferencia,
-                    tipo_referencia: tipoReferencia,
+                    tipo_escala: tipoEscala,
                     updated_at: new Date().toISOString()
-                }, { onConflict: 'user_id' });
+                };
 
-                if (error) throw error;
+                let { error } = await supabaseClient.from('escala_config').upsert(payload, { onConflict: 'user_id' });
 
-                configuracaoEscala = { data_referencia: dataReferencia, tipo_referencia: tipoReferencia };
+                if (error) {
+                    // Fallback se a tabela exigir colunas antigas que o usuário possuía no banco
+                    payload.data_referencia = dataLocalISO(new Date());
+                    payload.tipo_referencia = 'trabalho';
+                    let res2 = await supabaseClient.from('escala_config').upsert(payload, { onConflict: 'user_id' });
+                    if (res2.error) throw res2.error;
+                }
+
+                configuracaoEscala = { tipo_escala: tipoEscala };
                 fecharConfiguracaoEscala();
                 renderizarCalendario();
                 const lang = localStorage.getItem('idioma_preferido') || 'pt';
-                mostrarMensagem(lang === 'en' ? 'Schedule saved' : 'Escala salva', lang === 'en' ? 'Your schedule was successfully saved to the cloud.' : 'Sua escala 6x2 foi salva na nuvem com sucesso.', '✅');
+                mostrarMensagem(lang === 'en' ? 'Schedule saved' : 'Escala salva', lang === 'en' ? 'Your schedule was successfully saved.' : 'Sua escala semanal foi salva na nuvem com sucesso.', '✅');
             } catch (erro) {
                 console.error(erro);
                 mostrarMensagem('Erro', 'Não foi possível salvar sua escala no Supabase.', '❌');
@@ -925,7 +932,7 @@
                 grade.appendChild(celula);
             }
 
-            document.getElementById('aviso-config-escala').classList.toggle('hidden', !!configuracaoEscala);
+            document.getElementById('aviso-config-escala').classList.toggle('hidden', !!(configuracaoEscala && configuracaoEscala.tipo_escala));
         }
 
         function atualizarPreviewFerias() {
@@ -1263,9 +1270,6 @@
             }
         });
 
-        // ============================================================
-        // FUNÇÕES DE EDIÇÃO DE COMPROVANTES
-        // ============================================================
         function abrirModalEdicao(id, dataAtual, horaAtual, tipoAtual, imagemUrl) {
             document.getElementById('edit-id').value = id;
             document.getElementById('edit-data').value = dataAtual;
@@ -1299,7 +1303,6 @@
             try {
                 const novaExpiracao = calcularExpiracao(novaData);
 
-                // O ID no Supabase é do tipo UUID (string), por isso não usamos parseInt
                 const { error } = await supabaseClient
                     .from('pontos')
                     .update({
@@ -1377,6 +1380,8 @@
 
             vazioEl.classList.add('hidden');
             listaFiltrada.sort((a, b) => new Date(b.data + 'T' + (b.hora || '00:00')) - new Date(a.data + 'T' + (a.hora || '00:00')));
+
+            listaFiltrada.reloadList = true;
 
             listaFiltrada.forEach((item) => {
                 const dataFormatada = new Date(item.data + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'pt-BR');
