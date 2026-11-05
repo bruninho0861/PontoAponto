@@ -846,15 +846,36 @@
             botao.innerText = 'Salvando...';
 
             try {
-                let payload = {
-                    user_id: currentUser.id,
-                    tipo_escala: tipoEscala,
-                    updated_at: new Date().toISOString()
-                };
-
-                let { error } = await supabaseClient
+                // Verifica se já existe um registo para este utilizador (evita mexer nas restrições da BD)
+                let { data: configExistente, error: erroBusca } = await supabaseClient
                     .from('escala_config')
-                    .upsert(payload, { onConflict: 'user_id' });
+                    .select('id')
+                    .eq('user_id', currentUser.id)
+                    .maybeSingle();
+
+                let error;
+
+                if (configExistente) {
+                    // Se já existe, atualiza pelo ID
+                    let resUpdate = await supabaseClient
+                        .from('escala_config')
+                        .update({
+                            tipo_escala: tipoEscala,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', configExistente.id);
+                    error = resUpdate.error;
+                } else {
+                    // Se não existe, cria um novo registo
+                    let resInsert = await supabaseClient
+                        .from('escala_config')
+                        .insert({
+                            user_id: currentUser.id,
+                            tipo_escala: tipoEscala,
+                            updated_at: new Date().toISOString()
+                        });
+                    error = resInsert.error;
+                }
 
                 if (error) throw error;
 
@@ -870,7 +891,7 @@
                 );
             } catch (erro) {
                 console.error(erro);
-                mostrarMensagem('Erro', 'Não foi possível salvar sua escala no Supabase. Certifique-se de que a restrição unique (user_id) foi aplicada na tabela escala_config.', '❌');
+                mostrarMensagem('Erro', 'Não foi possível salvar sua escala no Supabase.', '❌');
             } finally {
                 botao.disabled = false;
                 botao.innerText = 'Salvar escala';
