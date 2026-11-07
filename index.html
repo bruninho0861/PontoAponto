@@ -285,10 +285,10 @@
                             <div>
                                 <label for="escala-tipo-selecionada" class="block text-xs font-semibold text-slate-600 mb-1">Escala Semanal</label>
                                 <select id="escala-tipo-selecionada" required class="w-full rounded-xl border border-slate-300 p-3 text-sm bg-slate-50 font-medium">
-                                    <option value="A">Escala A (Folga: Sexta e Sábado)</option>
-                                    <option value="B">Escala B (Folga: Quinta e Sexta)</option>
-                                    <option value="C">Escala C (Folga: Terça e Quarta)</option>
-                                    <option value="D">Escala D (Folga: Domingo e Segunda)</option>
+                                    <option value="A">Escala A (Ciclo 6x2)</option>
+                                    <option value="B">Escala B (Ciclo 6x2)</option>
+                                    <option value="C">Escala C (Ciclo 6x2)</option>
+                                    <option value="D">Escala D (Ciclo 6x2)</option>
                                 </select>
                             </div>
                             <div class="flex gap-2 pt-1">
@@ -707,11 +707,14 @@
         });
 
         // ============================================================
-        // CALENDÁRIO FIXO POR ESCALA (A, B, C, D) E CONTROLE DE FÉRIAS
+        // CALENDÁRIO FIXO POR CICLO 6x2 E CONTROLE DE FÉRIAS
         // ============================================================
         let configuracaoEscala = null;
         let feriasCadastradas = [];
         let mesExibido = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+        // Marco zero de referência: 06/11/2026 (Sexta-feira em que a folga começou)
+        const DATA_REFERENCIA_FOLGA = new Date(2026, 10, 6); // Mês 10 = novembro
 
         function dataLocalISO(data) {
             const ano = data.getFullYear();
@@ -733,18 +736,27 @@
 
         function obterTipoEscalaPura(data) {
             if (!configuracaoEscala || !configuracaoEscala.tipo_escala) return 'trabalho';
-            const diaSemana = data.getDay(); // 0: Dom, 1: Seg, 2: Ter, 3: Qua, 4: Qui, 5: Sex, 6: Sáb
-            const escala = configuracaoEscala.tipo_escala;
-
-            // Escala A: Folga Sexta (5) e Sábado (6)
-            if (escala === 'A' && (diaSemana === 5 || diaSemana === 6)) return 'folga';
-            // Escala B: Folga Quinta (4) e Sexta (5)
-            if (escala === 'B' && (diaSemana === 4 || diaSemana === 5)) return 'folga';
-            // Escala C: Folga Terça (2) e Quarta (3)
-            if (escala === 'C' && (diaSemana === 2 || diaSemana === 3)) return 'folga';
-            // Escala D: Folga Domingo (0) e Segunda (1)
-            if (escala === 'D' && (diaSemana === 0 || diaSemana === 1)) return 'folga';
-
+            
+            // Zera as horas para comparar apenas os dias
+            const d = new Date(data.getFullYear(), data.getMonth(), data.getDate());
+            const ref = new Date(DATA_REFERENCIA_FOLGA.getFullYear(), DATA_REFERENCIA_FOLGA.getMonth(), DATA_REFERENCIA_FOLGA.getDate());
+            
+            const diffTempo = d.getTime() - ref.getTime();
+            const diffDias = Math.floor(diffTempo / (1000 * 60 * 60 * 24));
+            
+            // O ciclo 6x2 tem um total de 8 dias (6 de trabalho + 2 de folga)
+            const cicloDias = 8;
+            
+            let resto = diffDias % cicloDias;
+            if (resto < 0) {
+                resto += cicloDias;
+            }
+            
+            // 0 e 1 correspondem aos dias de folga no ciclo contínuo
+            if (resto === 0 || resto === 1) {
+                return 'folga';
+            }
+            
             return 'trabalho';
         }
 
