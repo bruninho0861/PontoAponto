@@ -280,20 +280,23 @@
                 <div id="modal-config-escala" class="hidden fixed inset-0 z-40 bg-black/70 p-4 flex items-center justify-center">
                     <div class="bg-white rounded-2xl p-5 w-full max-w-sm shadow-2xl">
                         <h3 class="text-base font-bold text-blue-900 mb-1" data-translate="modalConfigTitulo">Selecionar sua escala</h3>
-                        <p class="text-xs text-slate-500 mb-4" data-translate="modalConfigSub">Escolha qual é a sua escala de folga semanal:</p>
+                        <p class="text-xs text-slate-500 mb-4" data-translate="modalConfigSub">Escolha qual é a sua escala (Ciclo 6x2):</p>
                         <form id="form-config-escala" class="space-y-3">
                             <div>
-                                <label for="escala-tipo-selecionada" class="block text-xs font-semibold text-slate-600 mb-1">Escala Semanal</label>
+                                <label for="escala-tipo-selecionada" class="block text-xs font-semibold text-slate-600 mb-1">Grupo / Escala</label>
                                 <select id="escala-tipo-selecionada" required class="w-full rounded-xl border border-slate-300 p-3 text-sm bg-slate-50 font-medium">
-                                    <option value="A">Escala A (Ciclo 6x2)</option>
-                                    <option value="B">Escala B (Ciclo 6x2)</option>
-                                    <option value="C">Escala C (Ciclo 6x2)</option>
-                                    <option value="D">Escala D (Ciclo 6x2)</option>
+                                    <option value="A">Escala A (Referência)</option>
+                                    <option value="D">Escala D (Avança 2 dias)</option>
+                                    <option value="C">Escala C (Avança 4 dias)</option>
+                                    <option value="B">Escala B (Avança 6 dias)</option>
                                 </select>
                             </div>
-                            <div class="flex gap-2 pt-1">
-                                <button type="button" onclick="fecharConfiguracaoEscala()" class="w-1/2 bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl text-xs" data-translate="btnCancelar">Cancelar</button>
-                                <button type="submit" id="btn-salvar-escala" class="w-1/2 bg-blue-800 text-white font-semibold py-3 rounded-xl text-xs" data-translate="btnSalvarEscala">Salvar escala</button>
+                            <div class="flex flex-col gap-2 pt-1">
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="fecharConfiguracaoEscala()" class="w-1/2 bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl text-xs" data-translate="btnCancelar">Cancelar</button>
+                                    <button type="submit" id="btn-salvar-escala" class="w-1/2 bg-blue-800 text-white font-semibold py-3 rounded-xl text-xs" data-translate="btnSalvarEscala">Salvar escala</button>
+                                </div>
+                                <button type="button" onclick="excluirConfiguracaoEscala()" class="w-full bg-rose-100 hover:bg-rose-200 text-rose-700 font-semibold py-2.5 rounded-xl text-xs transition">Excluir escala salva</button>
                             </div>
                         </form>
                     </div>
@@ -434,7 +437,7 @@
                 subFeriasCadastradas: "Férias cadastradas",
                 carregando: "Carregando...",
                 modalConfigTitulo: "Selecionar sua escala",
-                modalConfigSub: "Escolha qual é a sua escala de folga semanal:",
+                modalConfigSub: "Escolha qual é a sua escala (Ciclo 6x2):",
                 btnSalvarEscala: "Salvar escala",
                 tituloComprovantes: "Comprovantes Vigentes",
                 subComprovantes: "(Expiram após dia 12)",
@@ -482,7 +485,7 @@
                 subFeriasCadastradas: "Registered Vacations",
                 carregando: "Loading...",
                 modalConfigTitulo: "Select your schedule",
-                modalConfigSub: "Choose your weekly day-off schedule:",
+                modalConfigSub: "Choose your schedule (6x2 cycle):",
                 btnSalvarEscala: "Save Schedule",
                 tituloComprovantes: "Active Receipts",
                 subComprovantes: "(Expire after the 12th)",
@@ -707,14 +710,14 @@
         });
 
         // ============================================================
-        // CALENDÁRIO FIXO POR CICLO 6x2 E CONTROLE DE FÉRIAS
+        // CALENDÁRIO FIXO POR CICLO 6x2 COM ORDEM A -> D -> C -> B
         // ============================================================
         let configuracaoEscala = null;
         let feriasCadastradas = [];
         let mesExibido = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
-        // Marco zero de referência: 06/11/2026 (Sexta-feira em que a folga começou)
-        const DATA_REFERENCIA_FOLGA = new Date(2026, 10, 6); // Mês 10 = novembro
+        // Marco zero de referência base para a Escala A: 06/11/2026
+        const DATA_REFERENCIA_BASE = new Date(2026, 10, 6);
 
         function dataLocalISO(data) {
             const ano = data.getFullYear();
@@ -737,22 +740,27 @@
         function obterTipoEscalaPura(data) {
             if (!configuracaoEscala || !configuracaoEscala.tipo_escala) return 'trabalho';
             
-            // Zera as horas para comparar apenas os dias
+            const tipo = configuracaoEscala.tipo_escala; // A, D, C ou B
+            let deslocamentoDias = 0;
+
+            // Sequência solicitada: A (0), D (2), C (4), B (6)
+            if (tipo === 'D') deslocamentoDias = 2;
+            else if (tipo === 'C') deslocamentoDias = 4;
+            else if (tipo === 'B') deslocamentoDias = 6;
+
             const d = new Date(data.getFullYear(), data.getMonth(), data.getDate());
-            const ref = new Date(DATA_REFERENCIA_FOLGA.getFullYear(), DATA_REFERENCIA_FOLGA.getMonth(), DATA_REFERENCIA_FOLGA.getDate());
+            const ref = new Date(DATA_REFERENCIA_BASE.getFullYear(), DATA_REFERENCIA_BASE.getMonth(), DATA_REFERENCIA_BASE.getDate());
             
             const diffTempo = d.getTime() - ref.getTime();
             const diffDias = Math.floor(diffTempo / (1000 * 60 * 60 * 24));
             
-            // O ciclo 6x2 tem um total de 8 dias (6 de trabalho + 2 de folga)
-            const cicloDias = 8;
+            const cicloDias = 8; // 6 dias trab + 2 dias folga
             
-            let resto = diffDias % cicloDias;
+            let resto = (diffDias - deslocamentoDias) % cicloDias;
             if (resto < 0) {
                 resto += cicloDias;
             }
             
-            // 0 e 1 correspondem aos dias de folga no ciclo contínuo
             if (resto === 0 || resto === 1) {
                 return 'folga';
             }
@@ -905,6 +913,38 @@
                 botao.innerText = 'Salvar escala';
             }
         });
+
+        async function excluirConfiguracaoEscala() {
+            if (!currentUser) return;
+            const lang = localStorage.getItem('idioma_preferido') || 'pt';
+
+            mostrarConfirmacao(
+                lang === 'en' ? 'Delete schedule' : 'Excluir escala',
+                lang === 'en' ? 'Do you want to remove your saved schedule?' : 'Deseja remover a escala salva?',
+                async () => {
+                    try {
+                        const { error } = await supabaseClient
+                            .from('escala_config')
+                            .delete()
+                            .eq('user_id', currentUser.id);
+
+                        if (error) throw error;
+
+                        configuracaoEscala = null;
+                        fecharConfiguracaoEscala();
+                        renderizarCalendario();
+                        mostrarMensagem(
+                            lang === 'en' ? 'Schedule deleted' : 'Escala excluída',
+                            lang === 'en' ? 'Schedule configuration removed.' : 'Configuração de escala removida com sucesso.',
+                            '🗑️'
+                        );
+                    } catch (err) {
+                        console.error(err);
+                        mostrarMensagem('Erro', 'Não foi possível excluir a escala.', '❌');
+                    }
+                }
+            );
+        }
 
         function mudarMesCalendario(delta) {
             mesExibido = new Date(mesExibido.getFullYear(), mesExibido.getMonth() + delta, 1);
