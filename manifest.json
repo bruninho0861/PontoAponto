@@ -1,0 +1,20 @@
+{
+  "name": "Meu Ponto Certo",
+  "short_name": "PontoCerto",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#12347f",
+  "theme_color": "#12347f",
+  "icons": [
+    {
+      "src": "icone-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
