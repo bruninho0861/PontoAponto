@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Ponto Certo - Controle de Comprovantes</title>
+    
+    <!-- Configurações de PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#12347f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Ponto Certo">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client -->
@@ -653,7 +662,7 @@
 
             limparErrosAuth();
             camposCadastro.classList.add('hidden');
-            campoSenhaDiv.classList.add('hidden'); // Oculta o campo de senha na recuperação
+            campoSenhaDiv.classList.add('hidden');
 
             subtitle.innerText = 'Informe seu e-mail para receber as instruções de redefinição';
             btnSubmit.innerText = 'Enviar E-mail de Recuperação';
@@ -787,7 +796,6 @@
         let feriasCadastradas = [];
         let mesExibido = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
-        // Marco zero de referência base para a Escala A: 06/11/2026
         const DATA_REFERENCIA_BASE = new Date(2026, 10, 6);
 
         function dataLocalISO(data) {
@@ -811,10 +819,9 @@
         function obterTipoEscalaPura(data) {
             if (!configuracaoEscala || !configuracaoEscala.tipo_escala) return 'trabalho';
             
-            const tipo = configuracaoEscala.tipo_escala; // A, D, C ou B
+            const tipo = configuracaoEscala.tipo_escala;
             let deslocamentoDias = 0;
 
-            // Sequência solicitada: A (0), D (2), C (4), B (6)
             if (tipo === 'D') deslocamentoDias = 2;
             else if (tipo === 'C') deslocamentoDias = 4;
             else if (tipo === 'B') deslocamentoDias = 6;
@@ -825,7 +832,7 @@
             const diffTempo = d.getTime() - ref.getTime();
             const diffDias = Math.floor(diffTempo / (1000 * 60 * 60 * 24));
             
-            const cicloDias = 8; // 6 dias trab + 2 dias folga
+            const cicloDias = 8;
             
             let resto = (diffDias - deslocamentoDias) % cicloDias;
             if (resto < 0) {
@@ -1590,6 +1597,15 @@
 
         function fecharModal() {
             document.getElementById('modal-imagem').classList.add('hidden');
+        }
+
+        // Registro do Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registrado com sucesso:', reg.scope))
+                    .catch(err => console.log('Falha ao registrar Service Worker:', err));
+            });
         }
 
         verificarSessao();
